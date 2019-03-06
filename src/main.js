@@ -3,16 +3,16 @@
 import {
     BoxGeometry,
     // BufferAttribute,
-    CircleBufferGeometry,
+    CircleBufferGeometry, CubeCamera,
     // CircleBufferGeometry, // CircleGeometry,
     CylinderBufferGeometry, DoubleSide,
-    IcosahedronBufferGeometry, LinearFilter,
+    IcosahedronBufferGeometry, LinearFilter, LinearMipMapLinearFilter,
     Math as TMath,
-    Mesh,
+    Mesh, MeshBasicMaterial,
     MeshPhongMaterial, NearestFilter, Object3D, PerspectiveCamera, PlaneBufferGeometry,
     PointLight, RGBFormat, RingBufferGeometry, Scene, ShaderMaterial,
-    SphereBufferGeometry, WebGLRenderer, WebGLRenderTarget
-} from 'three';
+    SphereBufferGeometry, SphereGeometry, WebGLRenderer, WebGLRenderTarget
+} from 'three'
 import {OrbitControls} from './orbit';
 
 var wormholeVShader = [
@@ -73,50 +73,80 @@ var tunnelFShader = [
 ].join('\n');
 
 
-// var fisheyeUniforms = {
-//     tDiffuse:         { type: 't', value: null },
-//     strength:         { type: 'f', value: 0 },
-//     height:           { type: 'f', value: 1 },
-//     aspectRatio:      { type: 'f', value: 1 },
-//     cylindricalRatio: { type: 'f', value: 1 }
-// };
+var cubemapVertex = [
+    'varying vec3 vNormal;\n' +
+    'varying vec4 vPosition;\n' +
+    'varying vec4 vOPosition;\n' +
+    'varying vec3 vONormal;\n' +
+    'varying vec3 vU;\n' +
+    'varying vec3 vEye;\n' +
+    'void main() {\n' +
+        'vOPosition = modelViewMatrix * vec4( position, 1.0 );\n' +
+        'gl_Position = projectionMatrix * vOPosition;\n' +
+        'vU = normalize( vec3( modelViewMatrix * vec4( position, 1.0 ) ) );\n' +
+        'vPosition = vec4( position, 1.0 );\n' +
+        'vNormal = normalMatrix * normal;\n' +
+        'vONormal = normal;\n' +
+    '}'
+].join('\n');
 
-// var fisheyeVertexShader = [
-//     'uniform float strength;',          // s: 0 = perspective, 1 = stereographic
-//     'uniform float height;',            // h: tan(verticalFOVInRadians / 2)
-//     'uniform float aspectRatio;',       // a: screenWidth / screenHeight
-//     'uniform float cylindricalRatio;',  // c: cylindrical distortion ratio. 1 = spherical
-//
-//     'varying vec3 vUV;',                // output to interpolate over screen
-//     'varying vec2 vUVDot;',             // output to interpolate over screen
-//
-//     'void main() {',
-//     'gl_Position = projectionMatrix * (modelViewMatrix * vec4(position, 1.0));',
-//
-//     'float scaledHeight = strength * height;',
-//     'float cylAspectRatio = aspectRatio * cylindricalRatio;',
-//     'float aspectDiagSq = aspectRatio * aspectRatio + 1.0;',
-//     'float diagSq = scaledHeight * scaledHeight * aspectDiagSq;',
-//     'vec2 signedUV = (2.0 * uv + vec2(-1.0, -1.0));',
-//
-//     'float z = 0.5 * sqrt(diagSq + 1.0) + 0.5;',
-//     'float ny = (z - 1.0) / (cylAspectRatio * cylAspectRatio + 1.0);',
-//
-//     'vUVDot = sqrt(ny) * vec2(cylAspectRatio, 1.0) * signedUV;',
-//     'vUV = vec3(0.5, 0.5, 1.0) * z + vec3(-0.5, -0.5, 0.0);',
-//     'vUV.xy += uv;',
-//     '}'
-// ].join('\n');
-// var fisheyeFragmentShader = [
-//     'uniform sampler2D tDiffuse;',      // sampler of rendered scene?s render target
-//     'varying vec3 vUV;',                // interpolated vertex output data
-//     'varying vec2 vUVDot;',             // interpolated vertex output data
-//
-//     'void main() {',
-//     'vec3 uv = dot(vUVDot, vUVDot) * vec3(-0.5, -0.5, -1.0) + vUV;',
-//     'gl_FragColor = texture2DProj(tDiffuse, uv);',
-//     '}'
-// ].join('\n');
+var cubemapFragment = [
+    'uniform sampler2D textureMap;\n' +
+    'uniform sampler2D normalMap;\n' +
+    'uniform vec3 color;\n' +
+    'uniform float normalScale;\n' +
+    'uniform float texScale;\n' +
+    'uniform float useSSS;\n' +
+    'uniform float useScreen;\n' +
+    'varying vec3 vNormal;\n' +
+    'varying vec4 vPosition;\n' +
+    'varying vec4 vOPosition;\n' +
+    'varying vec3 vONormal;\n' +
+    'varying vec3 vU;\n' +
+    'varying vec3 vEye;\n' +
+    'float random(vec3 scale,float seed){return fract(sin(dot(gl_FragCoord.xyz+seed,scale))*43758.5453+seed);}\n' +
+    'void main() {\n' +
+    '    vec3 n = normalize( vONormal.xyz );\n' +
+    '    vec3 blend_weights = abs( n );\n' +
+    '    blend_weights = ( blend_weights - 0.2 ) * 7.;\n' +
+    '    blend_weights = max( blend_weights, 0. );\n' +
+    '    blend_weights /= ( blend_weights.x + blend_weights.y + blend_weights.z );\n' +
+    '    vec2 coord1 = vPosition.yz * texScale;\n' +
+    '    vec2 coord2 = vPosition.zx * texScale;\n' +
+    '    vec2 coord3 = vPosition.xy * texScale;\n' +
+    '    vec3 bump1 = texture2D( normalMap, coord1 ).rgb;\n' +
+    '    vec3 bump2 = texture2D( normalMap, coord2 ).rgb;\n' +
+    '    vec3 bump3 = texture2D( normalMap, coord3 ).rgb;\n' +
+    '    vec3 blended_bump = bump1 * blend_weights.xxx +\n' +
+    '        bump2 * blend_weights.yyy +\n' +
+    '        bump3 * blend_weights.zzz;\n' +
+    '    vec3 tanX = vec3( vNormal.x, -vNormal.z, vNormal.y);\n' +
+    '    vec3 tanY = vec3( vNormal.z, vNormal.y, -vNormal.x);\n' +
+    '    vec3 tanZ = vec3(-vNormal.y, vNormal.x, vNormal.z);\n' +
+    '    vec3 blended_tangent = tanX * blend_weights.xxx +\n' +
+    '        tanY * blend_weights.yyy +\n' +
+    '        tanZ * blend_weights.zzz;\n' +
+    '    vec3 normalTex = blended_bump * 2.0 - 1.0;\n' +
+    '    normalTex.xy *= normalScale;\n' +
+    '    normalTex.y *= -1.;\n' +
+    '    normalTex = normalize( normalTex );\n' +
+    '    mat3 tsb = mat3( normalize( blended_tangent ), normalize( cross( vNormal, blended_tangent ) ), normalize( vNormal ) );\n' +
+    '    vec3 finalNormal = tsb * normalTex;\n' +
+    '    vec3 r = reflect( normalize( vU ), normalize( finalNormal ) );\n' +
+    '    float m = 2.0 * sqrt( r.x * r.x + r.y * r.y + ( r.z + 1.0 ) * ( r.z + 1.0 ) );\n' +
+    '    vec2 calculatedNormal = vec2( r.x / m,  r.y / m );\n' +
+    '    vec3 base = texture2D( textureMap, calculatedNormal ).rgb;\n' +
+    '    float rim = 1.75 * max( 0., abs( dot( normalize( vNormal ), normalize( -vOPosition.xyz ) ) ) );\n' +
+    '    base += useSSS * color * ( 1. - .75 * rim );\n' +
+    '    base += ( 1. - useSSS ) * 10. * base * color * clamp( 1. - rim, 0., .15 );\n' +
+    '    if( useScreen == 1. ) {\n' +
+    '        base = vec3( 1. ) - ( vec3( 1. ) - base ) * ( vec3( 1. ) - base );\n' +
+    '    }\n' +
+    '    float nn = .05 * random( vec3( 1. ), length( gl_FragCoord ) );\n' +
+    '    base += vec3( nn );\n' +
+    '    gl_FragColor = vec4( base.rgb, 1. );\n' +
+    '}\n'
+].join('\n');
 
 // scene size
 var WIDTH = window.innerWidth;
@@ -133,17 +163,18 @@ var scene;
 var renderer;
 
 var cameraControls;
+var cubecam;
 
 var sphereGroup;
 var smallSphere;
 var worm;
 var wormholeRenderTarget;
-var tunnelRenderTarget;
+// var tunnelRenderTarget;
 
 var tunnel;
-var tunnelRotation;
-var tunnelCamera;
-var tunnelCameraControls; // ... unoptimized, just for aligning with the other camera
+// var tunnelRotation;
+// var tunnelCamera;
+// var tunnelCameraControls; // ... unoptimized, just for aligning with the other camera
 
 init();
 animate();
@@ -171,13 +202,20 @@ function init() {
     cameraControls.update();
 
     // tunnel camera
-    tunnelCamera = new PerspectiveCamera(120, ASPECT, 1, 1000000);
-    tunnelCamera.position.set(0, 75, -110);
-    tunnelCameraControls = new OrbitControls(tunnelCamera, renderer.domElement);
-    tunnelCameraControls.target.set(0, 75, -111);
-    tunnelCameraControls.maxDistance = 400;
-    tunnelCameraControls.minDistance = 10;
-    tunnelCameraControls.update();
+    // tunnelCamera = new PerspectiveCamera(120, ASPECT, 1, 1000000);
+    // tunnelCamera = new CubeCamera(1, 100000, 2);
+    cubecam = new CubeCamera(0.1, 1024, 256);
+    cubecam.renderTarget.texture.minFilter = LinearMipMapLinearFilter; // mipmap filter
+    cubecam.renderTarget.texture.generateMipmaps = true; // mipmap filter
+    scene.add(cubecam);
+    cubecam.position.set(0, 75, -230);
+
+    // tunnelCamera.position.set(0, 75, -110);
+    // tunnelCameraControls = new OrbitControls(tunnelCamera, renderer.domElement);
+    // tunnelCameraControls.target.set(0, 75, -111);
+    // tunnelCameraControls.maxDistance = 400;
+    // tunnelCameraControls.minDistance = 10;
+    // tunnelCameraControls.update();
 
     var planeGeo = new PlaneBufferGeometry(100.1, 100.1);
 
@@ -223,17 +261,17 @@ function init() {
     // !START INNER RING
 
     // Setup distortion effect
-    var geometryT = new CircleBufferGeometry(20, 30);
+    // var geometryT = new CircleBufferGeometry(20, 30);
     // var geometryT = new SphereBufferGeometry(20, 30, 30, 0,
     //     2 * Math.PI, 0,  0.5 * Math.PI);
-    tunnelRenderTarget = new WebGLRenderTarget(
-        width, height,
-        {
-            minFilter: LinearFilter,
-            magFilter: NearestFilter,
-            format: RGBFormat
-        }
-    );
+    // tunnelRenderTarget = new WebGLRenderTarget(
+    //     width, height,
+    //     {
+    //         minFilter: LinearFilter,
+    //         magFilter: NearestFilter,
+    //         format: RGBFormat
+    //     }
+    // );
     // var materialT = new ShaderMaterial({
     //     side: DoubleSide,
     //     uniforms: {
@@ -248,14 +286,20 @@ function init() {
     //     vertexShader: fisheyeVertexShader,
     //     fragmentShader: fisheyeFragmentShader
     // });
-    var materialT = new ShaderMaterial({
-        side: DoubleSide,
-        uniforms: {
-            texture1: { type:'t', value: tunnelRenderTarget.texture
-            }
-        },
-        vertexShader: tunnelVShader,
-        fragmentShader: tunnelFShader
+    // var materialT = new ShaderMaterial({
+    //     side: DoubleSide,
+    //     uniforms: {
+    //         texture1: { type:'t', value: tunnelRenderTarget.texture
+    //         }
+    //     },
+    //     vertexShader: tunnelVShader,
+    //     fragmentShader: tunnelFShader
+    // });
+    // var geometryT = new SphereGeometry(20, 16, 16);
+    var geometryT = new IcosahedronBufferGeometry(20, 3);
+    var materialT = new MeshBasicMaterial({
+        // color: 0xffffff,
+        envMap: cubecam.renderTarget.texture
     });
     tunnel = new Mesh(geometryT,
         materialT
@@ -394,6 +438,12 @@ function init() {
                 cube.position.y -= 1.2;
                 halfSphere.position.y--;
                 break;
+            case 83:
+                camera.position.z++;
+                break;
+            case 90:
+                camera.position.z--;
+                break;
             default: break;
         }
     });
@@ -413,14 +463,20 @@ function animate() {
     );
     smallSphere.rotation.y =  Math.PI / 2  - timer * 0.1;
     smallSphere.rotation.z = timer * 0.8;
-
     var mainRenderTarget = renderer.getRenderTarget();
     scene.remove(worm);
     scene.remove(tunnel);
+
+    tunnel.visible = false;
+    cubecam.update(renderer, scene);
+    tunnel.visible = true;
+
     renderer.setRenderTarget(wormholeRenderTarget);
     renderer.render(scene, camera);
-    renderer.setRenderTarget(tunnelRenderTarget);
-    renderer.render(scene, tunnelCamera);
+
+    // TODO cubemap
+    // renderer.setRenderTarget(tunnelRenderTarget);
+    // renderer.render(scene, tunnelCamera);
 
     scene.add(worm);
     scene.add(tunnel);
