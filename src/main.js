@@ -33,8 +33,12 @@ var wormholeFShader = [
     'varying vec2 v_vertex2D;\n' +
     '\n' +
     'void main() {\n' +
-    '   float dist = (distance(vec3(0.0), v_position) - 20.0) / 20.0;\n' +
-    '   vec2 ratio = dist * pos_frag.xy / pos_frag.w;\n' +
+    '   float initialDistance = distance(vec3(0.0), v_position);\n' +
+    '   bool outer = initialDistance > 30.0;\n' +
+    '   float dist = outer ? ((initialDistance - 30.0) / 10.0)' +
+    '                      : ((-initialDistance + 30.0) / 10.0);\n' +
+    '   vec2 ratio = outer ? (dist * pos_frag.xy / pos_frag.w) ' +
+    '                      : (-1.0 * (dist) * pos_frag.xy / pos_frag.w);\n' +
     '   vec2 correctedUv = (ratio + vec2(1.0)) * 0.5;\n' +
     '   gl_FragColor = texture2D(texture1, correctedUv);\n' +
     '}\n'
@@ -171,6 +175,18 @@ function init() {
     halfSphere.rotateX(-Math.PI / 180 * 135);
     halfSphere.rotateZ(-Math.PI / 180 * 20);
     halfSphere.position.y = 7.5 + 15 * Math.sin(Math.PI / 180 * 30);
+
+    document.addEventListener('keydown', event => {
+        switch (event.keyCode) {
+            case 32:
+                halfSphere.position.y++;
+                break;
+            case 16:
+                halfSphere.position.y--;
+                break;
+            default: break;
+        }
+    });
 
     sphereGroup.add(halfSphere);
 
