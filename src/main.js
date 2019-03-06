@@ -1,7 +1,9 @@
 
 // scene size
 import {
-    BufferAttribute,
+    BoxGeometry,
+    // BufferAttribute,
+    CircleBufferGeometry,
     // CircleBufferGeometry, // CircleGeometry,
     CylinderBufferGeometry, DoubleSide,
     IcosahedronBufferGeometry, LinearFilter,
@@ -11,16 +13,13 @@ import {
     SphereBufferGeometry, WebGLRenderer, WebGLRenderTarget
 } from 'three';
 import {OrbitControls} from './orbit';
-// import {Reflector} from './reflector';
 
 var wormholeVShader = [
     'varying vec4 pos_frag;\n' +
     'varying vec3 v_position;\n' +
     'attribute vec2 vertex2D;\n' +
-    'varying vec2 v_vertex2D;\n' +
     'void main() {\n' +
     '   v_position = (modelMatrix * vec4(position, 1.0)).xyz - modelMatrix[3].xyz;\n' +
-    '   v_vertex2D = vertex2D;\n' +
     '   pos_frag = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );\n' +
     '   gl_Position = pos_frag;\n' +
     '}'
@@ -30,7 +29,6 @@ var wormholeFShader = [
     'uniform sampler2D texture1;\n' +
     'varying vec4 pos_frag;\n' +
     'varying vec3 v_position;\n' +
-    'varying vec2 v_vertex2D;\n' +
     '\n' +
     'void main() {\n' +
     '   float initialDistance = distance(vec3(0.0), v_position);\n' +
@@ -40,6 +38,34 @@ var wormholeFShader = [
     '   vec2 ratio = outer ? (dist * pos_frag.xy / pos_frag.w) ' +
     '                      : (-1.0 * (dist) * pos_frag.xy / pos_frag.w);\n' +
     '   vec2 correctedUv = (ratio + vec2(1.0)) * 0.5;\n' +
+    '   gl_FragColor = texture2D(texture1, correctedUv);\n' +
+    '}\n'
+].join('\n');
+
+var tunnelVShader = [
+    'varying vec4 pos_frag;\n' +
+    'varying vec3 v_position;\n' +
+    'varying vec2 vUv;\n' +
+    'void main() {\n' +
+    '   vUv = uv;\n' +
+    '   v_position = (modelMatrix * vec4(position, 1.0)).xyz - modelMatrix[3].xyz;\n' +
+    '   pos_frag = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );\n' +
+    '   gl_Position = pos_frag;\n' +
+    '}'
+].join('\n');
+var tunnelFShader = [
+    'uniform sampler2D texture1;\n' +
+    'varying vec4 pos_frag;\n' +
+    'varying vec3 v_position;\n' +
+    'varying vec2 vUv;\n' +
+    '\n' +
+    'void main() {\n' +
+    '   float initialDistance = distance(vec3(0.0), v_position);\n' +
+    '   float dist = (-initialDistance + 20.0) / 20.0;\n' +
+    '   vec2 ratio = pos_frag.xy / pos_frag.w;\n' +
+    // '   vec2 ratio = pow(dist, 0.5) * pos_frag.xy / pos_frag.w;\n' +
+    // '   vec2 correctedUv = vUv;\n' +
+    '   vec2 correctedUv = dist * (ratio + vec2(1.0)) * 0.5;\n' +
     '   gl_FragColor = texture2D(texture1, correctedUv);\n' +
     '}\n'
 ].join('\n');
@@ -64,6 +90,11 @@ var sphereGroup;
 var smallSphere;
 var worm;
 var wormholeRenderTarget;
+var tunnelRenderTarget;
+
+var tunnel;
+var tunnelCamera;
+var tunnelCameraControls; // ... unoptimized, just for aligning with the other camera
 
 init();
 animate();
@@ -83,51 +114,33 @@ function init() {
     // camera
     camera = new PerspectiveCamera(VIEW_ANGLE, ASPECT, NEAR, FAR);
     camera.position.set(0, 75, 160);
-
+    // camera.position.set(0, 75, -110);
     cameraControls = new OrbitControls(camera, renderer.domElement);
     cameraControls.target.set(0, 40, 0);
     cameraControls.maxDistance = 400;
     cameraControls.minDistance = 10;
     cameraControls.update();
 
-    //
+    // tunnel camera
+    tunnelCamera = new PerspectiveCamera(120, ASPECT, NEAR, FAR);
+    tunnelCamera.position.set(0, 75, -110);
+    tunnelCameraControls = new OrbitControls(tunnelCamera, renderer.domElement);
+    tunnelCameraControls.target.set(0, 25, -200);
+    tunnelCameraControls.maxDistance = 400;
+    tunnelCameraControls.minDistance = 10;
+    tunnelCameraControls.update();
 
     var planeGeo = new PlaneBufferGeometry(100.1, 100.1);
 
-    // reflectors/mirrors
-
     var geometry;
     var material;
-    // geometry = new CircleBufferGeometry(40, 64);
-    // var groundMirror = new Reflector(geometry, {
-    //     clipBias: 0.003,
-    //     textureWidth: WIDTH * window.devicePixelRatio,
-    //     textureHeight: HEIGHT * window.devicePixelRatio,
-    //     color: 0x777777,
-    //     recursion: 1
-    // });
-    // groundMirror.position.y = 0.5;
-    // groundMirror.rotateX(-1 * Math.PI / 2);
-    // scene.add(groundMirror);
 
-    // geometry = new PlaneBufferGeometry(100, 100);
-    // var verticalMirror = new Reflector(geometry, {
-    //     clipBias: 0.003,
-    //     textureWidth: WIDTH * window.devicePixelRatio,
-    //     textureHeight: HEIGHT * window.devicePixelRatio,
-    //     color: 0x889999,
-    //     recursion: 1
-    // });
-    // verticalMirror.position.y = 50;
-    // verticalMirror.position.z = -50;
-    // scene.add(verticalMirror);
-
-    geometry = new RingBufferGeometry(20, 40, 30, 5);
-
+    // !!START WORMHOLE
     var antialiasFactor = 1;
-    // material = new MeshPhongMaterial({color: 0xff0000, emissive: 0xffffff});
     var width = window.innerWidth * antialiasFactor; // (tempWidth * window.innerWidth) / 2;
     var height = window.innerHeight * antialiasFactor; // (tempHeight * window.innerHeight) / 2;
+    // !START OUTER RING
+    geometry = new RingBufferGeometry(20, 40, 30, 5);
     wormholeRenderTarget = new WebGLRenderTarget(
         width, height,
         {
@@ -139,25 +152,54 @@ function init() {
     material = new ShaderMaterial({
         side: DoubleSide,
         uniforms: {
-            texture1: { type:'t', value:wormholeRenderTarget.texture }
+            texture1: { type:'t', value: wormholeRenderTarget.texture }
         },
         vertexShader: wormholeVShader,
         fragmentShader: wormholeFShader
     });
-
     worm = new Mesh(geometry, material);
     var yOrigin = 37.5;
     var zOrigin = 20.0;
     worm.position.y = yOrigin;
     worm.position.z = zOrigin;
-    var nbVertices = geometry.attributes.position.count;
-    var vertex2D = new Float32Array(nbVertices * 2);
-    for (var i = 0; i < nbVertices; ++i) {
-        var currentVertex = geometry.attributes.position;
-        vertex2D[i * 2] = currentVertex[i * 3 + 1] - yOrigin;
-        vertex2D[i * 2 + 1] = currentVertex[i * 3 + 2] - zOrigin;
-    }
-    geometry.addAttribute('vertex2D', new BufferAttribute(vertex2D, 2));
+    // Update worm with orbit controls. (unoptimized, beware)
+    var wormControls = new OrbitControls(worm, renderer.domElement);
+    wormControls.target.set(0, 40, 0);
+    wormControls.maxDistance = 400;
+    wormControls.minDistance = 10;
+    wormControls.update();
+    // !END OUTER RING
+
+
+    // !START INNER RING
+    var geometryT = new CircleBufferGeometry(20, 30);
+    tunnelRenderTarget = new WebGLRenderTarget(
+        width, height,
+        {
+            minFilter: LinearFilter,
+            magFilter: NearestFilter,
+            format: RGBFormat
+        }
+    );
+    var materialT = new ShaderMaterial({
+        side: DoubleSide,
+        uniforms: {
+            texture1: { type:'t', value: tunnelRenderTarget.texture }
+        },
+        vertexShader: tunnelVShader,
+        fragmentShader: tunnelFShader
+    });
+    tunnel = new Mesh(geometryT, materialT); // new MeshPhongMaterial({color: 0x0000ff, emissive: 0x333333}));
+    tunnel.position.y = yOrigin;
+    tunnel.position.z = zOrigin;
+    var tunnelControls = new OrbitControls(tunnel, renderer.domElement);
+    tunnelControls.target.set(0, 40, 0);
+    tunnelControls.maxDistance = 400;
+    tunnelControls.minDistance = 10;
+    tunnelControls.update();
+    // !END INNER RING
+    // !!END WORMHOLE
+
     // scene.add(worm);
 
     sphereGroup = new Object3D();
@@ -175,18 +217,6 @@ function init() {
     halfSphere.rotateX(-Math.PI / 180 * 135);
     halfSphere.rotateZ(-Math.PI / 180 * 20);
     halfSphere.position.y = 7.5 + 15 * Math.sin(Math.PI / 180 * 30);
-
-    document.addEventListener('keydown', event => {
-        switch (event.keyCode) {
-            case 32:
-                halfSphere.position.y++;
-                break;
-            case 16:
-                halfSphere.position.y--;
-                break;
-            default: break;
-        }
-    });
 
     sphereGroup.add(halfSphere);
 
@@ -244,6 +274,41 @@ function init() {
     var blueLight = new PointLight(0x7f7fff, 0.25, 1000);
     blueLight.position.set(0, 50, 550);
     scene.add(blueLight);
+
+    var whiteLight = new PointLight(0xffffff, 1.5, 300);
+    whiteLight.position.set(0, 50, -200);
+    scene.add(whiteLight);
+
+    // Cube tunnel
+    var cubeGeo = new BoxGeometry(12.5, 12.5, 12.5);
+    var cube = new Mesh(cubeGeo, new MeshPhongMaterial({ color: 0xff0000 }));
+    cube.position.z = -230;
+    cube.position.y = 25;
+    scene.add(cube);
+    for (let i = -5; i < 6; ++i) {
+        for (let j = -5; j < 6; ++j) {
+            cubeGeo = new BoxGeometry(12.5, 12.5, 12.5);
+            var cube2 = new Mesh(cubeGeo, new MeshPhongMaterial({ color: 0xff0000 }));
+            cube2.position.z = -230;
+            cube2.position.y = 25 + 25 * j;
+            cube2.position.x = 25 * i;
+            scene.add(cube2);
+        }
+    }
+
+    document.addEventListener('keydown', event => {
+        switch (event.keyCode) {
+            case 32:
+                cube.position.y += 1.2;
+                halfSphere.position.y++;
+                break;
+            case 16:
+                cube.position.y -= 1.2;
+                halfSphere.position.y--;
+                break;
+            default: break;
+        }
+    });
 }
 
 function animate() {
@@ -261,13 +326,16 @@ function animate() {
     smallSphere.rotation.y =  Math.PI / 2  - timer * 0.1;
     smallSphere.rotation.z = timer * 0.8;
 
-    // camera.position.x += 1.0;
     var mainRenderTarget = renderer.getRenderTarget();
     scene.remove(worm);
+    scene.remove(tunnel);
     renderer.setRenderTarget(wormholeRenderTarget);
     renderer.render(scene, camera);
-    // camera.position.x -= 1.0;
+    renderer.setRenderTarget(tunnelRenderTarget);
+    renderer.render(scene, tunnelCamera);
+
     scene.add(worm);
+    scene.add(tunnel);
     renderer.setRenderTarget(mainRenderTarget);
     renderer.render(scene, camera);
 }
