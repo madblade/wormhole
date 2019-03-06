@@ -7,6 +7,7 @@ import {
     // CircleBufferGeometry, // CircleGeometry,
     CylinderBufferGeometry, DoubleSide,
     IcosahedronBufferGeometry, LinearFilter,
+    Math as TMath,
     Mesh,
     MeshPhongMaterial, NearestFilter, Object3D, PerspectiveCamera, PlaneBufferGeometry,
     PointLight, RGBFormat, RingBufferGeometry, Scene, ShaderMaterial,
@@ -61,14 +62,61 @@ var tunnelFShader = [
     '\n' +
     'void main() {\n' +
     '   float initialDistance = distance(vec3(0.0), v_position);\n' +
-    '   float dist = (-initialDistance + 20.0) / 20.0;\n' +
-    '   vec2 ratio = pos_frag.xy / pos_frag.w;\n' +
+    '   float dist = (initialDistance - 20.0) / 20.0;\n' +
+    // '   vec2 ratio = pos_frag.xy / pos_frag.w;\n' +
     // '   vec2 ratio = pow(dist, 0.5) * pos_frag.xy / pos_frag.w;\n' +
+    '   vec2 ratio = exp(-dist) * pos_frag.xy / pos_frag.w;\n' +
     // '   vec2 correctedUv = vUv;\n' +
-    '   vec2 correctedUv = dist * (ratio + vec2(1.0)) * 0.5;\n' +
+    '   vec2 correctedUv = (ratio + vec2(1.0)) * 0.5;\n' +
     '   gl_FragColor = texture2D(texture1, correctedUv);\n' +
     '}\n'
 ].join('\n');
+
+
+// var fisheyeUniforms = {
+//     tDiffuse:         { type: 't', value: null },
+//     strength:         { type: 'f', value: 0 },
+//     height:           { type: 'f', value: 1 },
+//     aspectRatio:      { type: 'f', value: 1 },
+//     cylindricalRatio: { type: 'f', value: 1 }
+// };
+
+// var fisheyeVertexShader = [
+//     'uniform float strength;',          // s: 0 = perspective, 1 = stereographic
+//     'uniform float height;',            // h: tan(verticalFOVInRadians / 2)
+//     'uniform float aspectRatio;',       // a: screenWidth / screenHeight
+//     'uniform float cylindricalRatio;',  // c: cylindrical distortion ratio. 1 = spherical
+//
+//     'varying vec3 vUV;',                // output to interpolate over screen
+//     'varying vec2 vUVDot;',             // output to interpolate over screen
+//
+//     'void main() {',
+//     'gl_Position = projectionMatrix * (modelViewMatrix * vec4(position, 1.0));',
+//
+//     'float scaledHeight = strength * height;',
+//     'float cylAspectRatio = aspectRatio * cylindricalRatio;',
+//     'float aspectDiagSq = aspectRatio * aspectRatio + 1.0;',
+//     'float diagSq = scaledHeight * scaledHeight * aspectDiagSq;',
+//     'vec2 signedUV = (2.0 * uv + vec2(-1.0, -1.0));',
+//
+//     'float z = 0.5 * sqrt(diagSq + 1.0) + 0.5;',
+//     'float ny = (z - 1.0) / (cylAspectRatio * cylAspectRatio + 1.0);',
+//
+//     'vUVDot = sqrt(ny) * vec2(cylAspectRatio, 1.0) * signedUV;',
+//     'vUV = vec3(0.5, 0.5, 1.0) * z + vec3(-0.5, -0.5, 0.0);',
+//     'vUV.xy += uv;',
+//     '}'
+// ].join('\n');
+// var fisheyeFragmentShader = [
+//     'uniform sampler2D tDiffuse;',      // sampler of rendered scene?s render target
+//     'varying vec3 vUV;',                // interpolated vertex output data
+//     'varying vec2 vUVDot;',             // interpolated vertex output data
+//
+//     'void main() {',
+//     'vec3 uv = dot(vUVDot, vUVDot) * vec3(-0.5, -0.5, -1.0) + vUV;',
+//     'gl_FragColor = texture2DProj(tDiffuse, uv);',
+//     '}'
+// ].join('\n');
 
 // scene size
 var WIDTH = window.innerWidth;
@@ -93,6 +141,7 @@ var wormholeRenderTarget;
 var tunnelRenderTarget;
 
 var tunnel;
+var tunnelRotation;
 var tunnelCamera;
 var tunnelCameraControls; // ... unoptimized, just for aligning with the other camera
 
@@ -122,10 +171,10 @@ function init() {
     cameraControls.update();
 
     // tunnel camera
-    tunnelCamera = new PerspectiveCamera(120, ASPECT, NEAR, FAR);
+    tunnelCamera = new PerspectiveCamera(120, ASPECT, 1, 1000000);
     tunnelCamera.position.set(0, 75, -110);
     tunnelCameraControls = new OrbitControls(tunnelCamera, renderer.domElement);
-    tunnelCameraControls.target.set(0, 25, -200);
+    tunnelCameraControls.target.set(0, 75, -111);
     tunnelCameraControls.maxDistance = 400;
     tunnelCameraControls.minDistance = 10;
     tunnelCameraControls.update();
@@ -172,7 +221,11 @@ function init() {
 
 
     // !START INNER RING
+
+    // Setup distortion effect
     var geometryT = new CircleBufferGeometry(20, 30);
+    // var geometryT = new SphereBufferGeometry(20, 30, 30, 0,
+    //     2 * Math.PI, 0,  0.5 * Math.PI);
     tunnelRenderTarget = new WebGLRenderTarget(
         width, height,
         {
@@ -181,22 +234,57 @@ function init() {
             format: RGBFormat
         }
     );
+    // var materialT = new ShaderMaterial({
+    //     side: DoubleSide,
+    //     uniforms: {
+    //         tDiffuse:         { type: 't', value: tunnelRenderTarget.texture },
+    //         strength:         { type: 'f', value: 0 },
+    //         height:           { type: 'f', value: 1 },
+    //         aspectRatio:      { type: 'f', value: 1 },
+    //         cylindricalRatio: { type: 'f', value: 1 }
+    //         // ,
+    //         // texture1: { type:'t', value: tunnelRenderTarget.texture }
+    //     },
+    //     vertexShader: fisheyeVertexShader,
+    //     fragmentShader: fisheyeFragmentShader
+    // });
     var materialT = new ShaderMaterial({
         side: DoubleSide,
         uniforms: {
-            texture1: { type:'t', value: tunnelRenderTarget.texture }
+            texture1: { type:'t', value: tunnelRenderTarget.texture
+            }
         },
         vertexShader: tunnelVShader,
         fragmentShader: tunnelFShader
     });
-    tunnel = new Mesh(geometryT, materialT); // new MeshPhongMaterial({color: 0x0000ff, emissive: 0x333333}));
+    tunnel = new Mesh(geometryT,
+        materialT
+        //new MeshPhongMaterial({ color: 0xffffff, emissive: 0x444444, side: DoubleSide })
+    );
     tunnel.position.y = yOrigin;
     tunnel.position.z = zOrigin;
+    // tunnel.rotation.x = Math.PI / 2;
+    // tunnel.rotation.z = Math.PI;
+    // tunnelRotation = new Object3D();
+    // var intermediate = new Object3D();
+    // intermediate.add(tunnel);
+    // tunnelRotation.add(intermediate);
     var tunnelControls = new OrbitControls(tunnel, renderer.domElement);
     tunnelControls.target.set(0, 40, 0);
     tunnelControls.maxDistance = 400;
     tunnelControls.minDistance = 10;
     tunnelControls.update();
+
+    // var horizontalFOV = 140;
+    // var strength = 0.5;
+    // var cylindricalRatio = 2;
+    // var height2 = Math.tan(TMath.degToRad(horizontalFOV) / 2) / camera.aspect;
+    // tunnelCamera.fov = Math.atan(height2) * 2 * 180 / 3.1415926535;
+    // tunnelCamera.updateProjectionMatrix();
+    // tunnel.material.uniforms.strength.value = strength;
+    // tunnel.material.uniforms.height.value = height;
+    // tunnel.material.uniforms.aspectRatio.value = camera.aspect;
+    // tunnel.material.uniforms.cylindricalRatio.value = cylindricalRatio;
     // !END INNER RING
     // !!END WORMHOLE
 
