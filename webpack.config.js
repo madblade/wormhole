@@ -22,11 +22,12 @@ module.exports = {
                 test: /\.js$/,
                 loader: 'babel-loader',
                 exclude: /node_modules/
-            },
-            {
-                test: /\.glsl$/,
-                use: 'raw-loader'
             }
+            // ,
+            // {
+            //     test: /\.glsl$/,
+            //     use: 'raw-loader'
+            // }
         ]
     },
 

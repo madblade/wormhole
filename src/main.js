@@ -11,7 +11,8 @@ import {
     Mesh, MeshBasicMaterial,
     MeshPhongMaterial, NearestFilter, Object3D, PerspectiveCamera, PlaneBufferGeometry,
     PointLight, RGBFormat, RingBufferGeometry, Scene, ShaderMaterial,
-    SphereBufferGeometry, SphereGeometry, WebGLRenderer, WebGLRenderTarget
+    SphereBufferGeometry, SphereGeometry, WebGLRenderer, WebGLRenderTarget,
+    ShaderLib, UniformsUtils, Color
 } from 'three'
 import {OrbitControls} from './orbit';
 
@@ -175,6 +176,8 @@ var tunnel;
 // var tunnelRotation;
 // var tunnelCamera;
 // var tunnelCameraControls; // ... unoptimized, just for aligning with the other camera
+var cubeCameraControls;
+var lights = [];
 
 init();
 animate();
@@ -204,12 +207,18 @@ function init() {
     // tunnel camera
     // tunnelCamera = new PerspectiveCamera(120, ASPECT, 1, 1000000);
     // tunnelCamera = new CubeCamera(1, 100000, 2);
-    cubecam = new CubeCamera(0.1, 1024, 256);
+    cubecam = new CubeCamera(0.1, 1024, 1024);
     cubecam.renderTarget.texture.minFilter = LinearMipMapLinearFilter; // mipmap filter
     cubecam.renderTarget.texture.generateMipmaps = true; // mipmap filter
     scene.add(cubecam);
     cubecam.position.set(0, 75, -230);
+    // cubecam.rotation.x = Math.PI;
 
+    cubeCameraControls = new OrbitControls(cubecam, renderer.domElement);
+    cubeCameraControls.target.set(0, 75, -231);
+    cubeCameraControls.maxDistance = 400;
+    cubeCameraControls.minDistance = 10;
+    cubeCameraControls.update();
     // tunnelCamera.position.set(0, 75, -110);
     // tunnelCameraControls = new OrbitControls(tunnelCamera, renderer.domElement);
     // tunnelCameraControls.target.set(0, 75, -111);
@@ -245,8 +254,8 @@ function init() {
         fragmentShader: wormholeFShader
     });
     worm = new Mesh(geometry, material);
-    var yOrigin = 37.5;
-    var zOrigin = 20.0;
+    var yOrigin = 40; // 37.5;
+    var zOrigin = 0; // 20.0;
     worm.position.y = yOrigin;
     worm.position.z = zOrigin;
     // Update worm with orbit controls. (unoptimized, beware)
@@ -296,28 +305,56 @@ function init() {
     //     fragmentShader: tunnelFShader
     // });
     // var geometryT = new SphereGeometry(20, 16, 16);
-    var geometryT = new IcosahedronBufferGeometry(20, 3);
-    var materialT = new MeshBasicMaterial({
-        // color: 0xffffff,
-        envMap: cubecam.renderTarget.texture
+    var geometryT = new IcosahedronBufferGeometry(20, 4);
+    // var materialT = new MeshBasicMaterial({
+    //     // color: 0xffffff,
+    //     envMap: cubecam.renderTarget.texture,
+    //
+    // });
+    // TODO Modify standard shader to remove reflected lights!
+    // TODO Customize standard shader for distortion to fade out when camera nears
+    var materialT = new ShaderMaterial({
+        uniforms: UniformsUtils.merge([
+            ShaderLib.standard.uniforms,
+            {
+                envMap: {
+                    type: 't',
+                    value: cubecam.renderTarget
+                }
+            }
+        ]),
+        vertexShader: ShaderLib.standard.vertexShader,
+        fragmentShader: ShaderLib.standard.fragmentShader,
+        depthWrite: false,
+        transparent: true,
+        opacity: 1,
+        lights: true,
     });
+    materialT.envMap = cubecam.renderTarget.texture;
+    materialT.uniforms.metalness.value = 1;
+    materialT.uniforms.roughness.value = 0;
+    materialT.uniforms.diffuse.value = new Color(0xffffff);
+    materialT.uniforms.emissive.value = new Color(0x000000);
+    materialT.uniforms.flipEnvMap.value = 1;
+    materialT.needsUpdate = true;
+
     tunnel = new Mesh(geometryT,
         materialT
         //new MeshPhongMaterial({ color: 0xffffff, emissive: 0x444444, side: DoubleSide })
     );
-    tunnel.position.y = yOrigin;
-    tunnel.position.z = zOrigin;
+    tunnel.position.y = 40;
+    tunnel.position.z = 0;
     // tunnel.rotation.x = Math.PI / 2;
     // tunnel.rotation.z = Math.PI;
     // tunnelRotation = new Object3D();
     // var intermediate = new Object3D();
     // intermediate.add(tunnel);
     // tunnelRotation.add(intermediate);
-    var tunnelControls = new OrbitControls(tunnel, renderer.domElement);
-    tunnelControls.target.set(0, 40, 0);
-    tunnelControls.maxDistance = 400;
-    tunnelControls.minDistance = 10;
-    tunnelControls.update();
+    // var tunnelControls = new OrbitControls(tunnel, renderer.domElement);
+    // tunnelControls.target.set(0, 40, 0);
+    // tunnelControls.maxDistance = 400;
+    // tunnelControls.minDistance = 10;
+    // tunnelControls.update();
 
     // var horizontalFOV = 140;
     // var strength = 0.5;
@@ -393,22 +430,27 @@ function init() {
     // lights
     var mainLight = new PointLight(0xcccccc, 1.5, 250);
     mainLight.position.y = 60;
+    lights.push(mainLight);
     scene.add(mainLight);
 
     var greenLight = new PointLight(0x00ff00, 0.25, 1000);
     greenLight.position.set(550, 50, 0);
+    lights.push(greenLight);
     scene.add(greenLight);
 
     var redLight = new PointLight(0xff0000, 0.25, 1000);
     redLight.position.set(-550, 50, 0);
+    lights.push(redLight);
     scene.add(redLight);
 
     var blueLight = new PointLight(0x7f7fff, 0.25, 1000);
     blueLight.position.set(0, 50, 550);
+    lights.push(blueLight);
     scene.add(blueLight);
 
     var whiteLight = new PointLight(0xffffff, 1.5, 300);
     whiteLight.position.set(0, 50, -200);
+    lights.push(whiteLight);
     scene.add(whiteLight);
 
     // Cube tunnel
@@ -467,12 +509,12 @@ function animate() {
     scene.remove(worm);
     scene.remove(tunnel);
 
+    renderer.setRenderTarget(wormholeRenderTarget);
+    renderer.render(scene, camera);
+
     tunnel.visible = false;
     cubecam.update(renderer, scene);
     tunnel.visible = true;
-
-    renderer.setRenderTarget(wormholeRenderTarget);
-    renderer.render(scene, camera);
 
     // TODO cubemap
     // renderer.setRenderTarget(tunnelRenderTarget);
