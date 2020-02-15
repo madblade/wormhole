@@ -13,7 +13,7 @@ import {
     PointLight, RGBFormat, RingBufferGeometry, Scene, ShaderMaterial,
     SphereBufferGeometry, SphereGeometry, WebGLRenderer, WebGLRenderTarget,
     ShaderLib, UniformsUtils, Color
-} from 'three'
+} from 'three';
 import {OrbitControls} from './orbit';
 
 var wormholeVShader = [
@@ -27,16 +27,32 @@ var wormholeVShader = [
     '}'
 ].join('\n');
 
+// TODO decommit0
+// TODO render 1st pass into depth buffer
+// TODO read depht buffer and add perturbation accordingly
+// https://threejs.org/examples/webgl_depth_texture.html
+// https://stackoverflow.com/questions/50530765/how-do-i-access-depth-data-in-three-js
+// https://stackoverflow.com/questions/23362076/opengl-how-to-access-depth-buffer-values-or-gl-fragcoord-z-vs-rendering-d
+
+// Using depth attributes won't work. Instead:
+// - attach a vertex shader to all objects between the wormhole and the background texture
+// - move vertices according to depth
+    // - project to plane
+    // - move orth plane as a fn of depth
+// - join moved vertices with the background image at infty. (make the thing go to infty close)
+
 var wormholeFShader = [
     'uniform sampler2D texture1;\n' +
     'varying vec4 pos_frag;\n' +
     'varying vec3 v_position;\n' +
     '\n' +
     'void main() {\n' +
-    '   float initialDistance = distance(vec3(0.0), v_position);\n' +
+    '   float initialDistance = distance(vec2(0.0), v_position.xy);\n' +
     '   bool outer = initialDistance > 30.0;\n' +
     '   float dist = outer ? ((initialDistance - 30.0) / 10.0)' +
     '                      : ((-initialDistance + 30.0) / 10.0);\n' +
+    '   //dist = v_position.z; \n' +
+    '   //dist = outer ? 1.0 : -1.0; \n' +
     '   vec2 ratio = outer ? (dist * pos_frag.xy / pos_frag.w) ' +
     '                      : (-1.0 * (dist) * pos_frag.xy / pos_frag.w);\n' +
     '   vec2 correctedUv = (ratio + vec2(1.0)) * 0.5;\n' +
@@ -156,7 +172,7 @@ var HEIGHT = window.innerHeight;
 // camera
 var VIEW_ANGLE = 45;
 var ASPECT = WIDTH / HEIGHT;
-var NEAR = 1;
+var NEAR = 0.001; // TODO decommit
 var FAR = 500;
 
 var camera;
@@ -210,7 +226,7 @@ function init() {
     cubecam = new CubeCamera(0.1, 1024, 1024);
     cubecam.renderTarget.texture.minFilter = LinearMipMapLinearFilter; // mipmap filter
     cubecam.renderTarget.texture.generateMipmaps = true; // mipmap filter
-    scene.add(cubecam);
+    // scene.add(cubecam); // TODO decommit
     cubecam.position.set(0, 75, -230);
     // cubecam.rotation.x = Math.PI;
 
@@ -251,7 +267,9 @@ function init() {
             texture1: { type:'t', value: wormholeRenderTarget.texture }
         },
         vertexShader: wormholeVShader,
-        fragmentShader: wormholeFShader
+        fragmentShader: wormholeFShader,
+        // depthTest: false, // TODO decommit
+        // renderOrder: 9999
     });
     worm = new Mesh(geometry, material);
     var yOrigin = 40; // 37.5;
@@ -372,7 +390,8 @@ function init() {
     // scene.add(worm);
 
     sphereGroup = new Object3D();
-    scene.add(sphereGroup);
+    // TODO decommit
+    // scene.add(sphereGroup);
 
     geometry = new CylinderBufferGeometry(0.1, 15 * Math.cos(Math.PI / 180 * 30), 0.1, 24, 1);
     material = new MeshPhongMaterial({ color: 0xffffff, emissive: 0x444444 });
@@ -491,6 +510,17 @@ function init() {
     });
 }
 
+// TODO decommit1
+// TODO 1. log camera distance to blackhole object
+// put a cube in front of the camera
+// 2. put ring near camera
+// 3. adjust ring outer size
+// 4. use my shading skills to integrate displacement
+// 5. reflex and adjust ring inner size
+// 6. put inner circle near camera
+// 7. use envmap in inner circle
+// On top of setting object.renderOrder you have to set material.depthTest to false on the relevant objects.
+
 function animate() {
     requestAnimationFrame(animate);
 
@@ -512,16 +542,17 @@ function animate() {
     renderer.setRenderTarget(wormholeRenderTarget);
     renderer.render(scene, camera);
 
-    tunnel.visible = false;
-    cubecam.update(renderer, scene);
-    tunnel.visible = true;
+    // TODO decommit
+    // tunnel.visible = false;
+    // cubecam.update(renderer, scene);
+    // tunnel.visible = true;
 
     // TODO cubemap
     // renderer.setRenderTarget(tunnelRenderTarget);
     // renderer.render(scene, tunnelCamera);
 
     scene.add(worm);
-    scene.add(tunnel);
+    // scene.add(tunnel); // TODO decommit
     renderer.setRenderTarget(mainRenderTarget);
     renderer.render(scene, camera);
 }
