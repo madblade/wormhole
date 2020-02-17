@@ -158,7 +158,7 @@ module.exports = {
       "before": true,
       "after": true
     }],                                                         //enforce spacing before and after keywords
-    "linebreak-style": 2,                                       //disallow mixed 'LF' and 'CRLF' as linebreaks
+    "linebreak-style": 0,                                       //disallow mixed 'LF' and 'CRLF' as linebreaks
     "lines-around-comment": 0,                                  //enforce empty lines around comments
     "max-depth": 1,                                             //specify the maximum depth that blocks can be nested
     "max-len": [1, 200],                                        //specify the maximum length of a line in your program

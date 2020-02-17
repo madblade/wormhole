@@ -20,7 +20,9 @@ var wormholeVShader = [
     'varying vec4 pos_frag;\n' +
     'varying vec3 v_position;\n' +
     'attribute vec2 vertex2D;\n' +
+    'varying vec2 vUv;\n' +
     'void main() {\n' +
+    '   vUv = uv;\n' +
     '   v_position = (modelMatrix * vec4(position, 1.0)).xyz - modelMatrix[3].xyz;\n' +
     '   pos_frag = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );\n' +
     '   gl_Position = pos_frag;\n' +
@@ -45,17 +47,22 @@ var wormholeFShader = [
     'uniform sampler2D texture1;\n' +
     'varying vec4 pos_frag;\n' +
     'varying vec3 v_position;\n' +
+    'varying vec2 vUv;\n' +
     '\n' +
     'void main() {\n' +
-    '   float initialDistance = distance(vec2(0.0), v_position.xy);\n' +
-    '   bool outer = initialDistance > 30.0;\n' +
+    '   float initialDistance = distance(vec3(0.0), v_position.xyz);\n' +
+    '   float d2 = (initialDistance - 20.0) / 20.0;\n' +
+    '   bool outer = initialDistance > 10000.0;\n' +
     '   float dist = outer ? ((initialDistance - 30.0) / 10.0)' +
     '                      : ((-initialDistance + 30.0) / 10.0);\n' +
     '   //dist = v_position.z; \n' +
     '   //dist = outer ? 1.0 : -1.0; \n' +
-    '   vec2 ratio = outer ? (dist * pos_frag.xy / pos_frag.w) ' +
-    '                      : (-1.0 * (dist) * pos_frag.xy / pos_frag.w);\n' +
-    '   vec2 correctedUv = (ratio + vec2(1.0)) * 0.5;\n' +
+    '   vec2 pxy = pos_frag.xy; \n' +
+    '   float pw = pos_frag.w; \n' +
+    '   vec2 ratio = outer ? (dist * pxy / pos_frag.w) ' +
+    '                      : (-1.0 * (dist) * pxy / pos_frag.w);\n' +
+    '   vec2 correctedUv = (vec2(d2 * pxy / pw) + vec2(1.0)) * 0.5;\n' +
+    // '   vec2 correctedUv = (ratio + vec2(1.0)) * 0.5;\n' +
     '   gl_FragColor = texture2D(texture1, correctedUv);\n' +
     '}\n'
 ].join('\n');
@@ -268,7 +275,7 @@ function init() {
         },
         vertexShader: wormholeVShader,
         fragmentShader: wormholeFShader,
-        // depthTest: false, // TODO decommit
+        depthTest: false, // TODO decommit
         // renderOrder: 9999
     });
     worm = new Mesh(geometry, material);
@@ -556,3 +563,5 @@ function animate() {
     renderer.setRenderTarget(mainRenderTarget);
     renderer.render(scene, camera);
 }
+
+// TODO FXAA post proc
