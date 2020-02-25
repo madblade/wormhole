@@ -1,17 +1,13 @@
 
 // scene size
 import {
-    BoxGeometry,
-    // BufferAttribute,
-    CircleBufferGeometry, CubeCamera,
-    // CircleBufferGeometry, // CircleGeometry,
+    BoxGeometry, CubeCamera,
     CylinderBufferGeometry, DoubleSide,
     IcosahedronBufferGeometry, LinearFilter, LinearMipMapLinearFilter,
-    Math as TMath,
-    Mesh, MeshBasicMaterial,
-    MeshPhongMaterial, NearestFilter, Object3D, PerspectiveCamera, PlaneBufferGeometry,
-    PointLight, RGBFormat, RingBufferGeometry, Scene, ShaderMaterial,
-    SphereBufferGeometry, SphereGeometry, WebGLRenderer, WebGLRenderTarget,
+    Mesh,
+    MeshPhongMaterial, NearestFilter, Object3D, PerspectiveCamera,
+    RGBFormat, RingBufferGeometry, Scene, ShaderMaterial,
+    SphereBufferGeometry, WebGLRenderer, WebGLRenderTarget,
     ShaderLib, UniformsUtils, Color
 } from 'three';
 import {OrbitControls} from './orbit';
@@ -20,21 +16,8 @@ import {EffectComposer} from 'three/examples/jsm/postprocessing/EffectComposer';
 import {RenderPass} from 'three/examples/jsm/postprocessing/RenderPass';
 import {ShaderPass} from 'three/examples/jsm/postprocessing/ShaderPass';
 import {FXAAShader} from 'three/examples/jsm/shaders/FXAAShader';
+import {OuterSimpleStretch} from './OuterSimpleStretch';
 
-var wormholeVShader = [
-    'varying vec4 pos_frag;\n' +
-    'varying vec3 v_position;\n' +
-    'attribute vec2 vertex2D;\n' +
-    'varying vec2 vUv;\n' +
-    'void main() {\n' +
-    '   vUv = uv;\n' +
-    '   v_position = (modelMatrix * vec4(position, 1.0)).xyz - modelMatrix[3].xyz;\n' +
-    '   pos_frag = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );\n' +
-    '   gl_Position = pos_frag;\n' +
-    '}'
-].join('\n');
-
-// TODO decommit0
 // TODO render 1st pass into depth buffer
 // TODO read depht buffer and add perturbation accordingly
 // https://threejs.org/examples/webgl_depth_texture.html
@@ -44,33 +27,9 @@ var wormholeVShader = [
 // Using depth attributes won't work. Instead:
 // - attach a vertex shader to all objects between the wormhole and the background texture
 // - move vertices according to depth
-    // - project to plane
-    // - move orth plane as a fn of depth
+// - project to plane
+// - move orth plane as a fn of depth
 // - join moved vertices with the background image at infty. (make the thing go to infty close)
-
-var wormholeFShader = [
-    'uniform sampler2D texture1;\n' +
-    'varying vec4 pos_frag;\n' +
-    'varying vec3 v_position;\n' +
-    'varying vec2 vUv;\n' +
-    '\n' +
-    'void main() {\n' +
-    '   float initialDistance = distance(vec3(0.0), v_position.xyz);\n' +
-    '   float d2 = (initialDistance - 20.0) / 20.0;\n' +
-    '   bool outer = initialDistance > 10000.0;\n' +
-    '   float dist = outer ? ((initialDistance - 30.0) / 10.0)' +
-    '                      : ((-initialDistance + 30.0) / 10.0);\n' +
-    '   //dist = v_position.z; \n' +
-    '   //dist = outer ? 1.0 : -1.0; \n' +
-    '   vec2 pxy = pos_frag.xy; \n' +
-    '   float pw = pos_frag.w; \n' +
-    '   vec2 ratio = outer ? (dist * pxy / pos_frag.w) ' +
-    '                      : (-1.0 * (dist) * pxy / pos_frag.w);\n' +
-    // '   vec2 correctedUv = (vec2(d2 * pxy / pw) + vec2(1.0)) * 0.5;\n' +
-    '   vec2 correctedUv = (ratio + vec2(1.0)) * 0.5;\n' +
-    '   gl_FragColor = texture2D(texture1, correctedUv);\n' +
-    '}\n'
-].join('\n');
 
 var tunnelVShader = [
     'varying vec4 pos_frag;\n' +
@@ -197,7 +156,6 @@ var cubecam;
 var sphereGroup;
 var smallSphere;
 var worm;
-var wormholeRenderTarget;
 // var tunnelRenderTarget;
 
 var tunnel;
@@ -254,8 +212,6 @@ function init() {
     // tunnelCameraControls.minDistance = 10;
     // tunnelCameraControls.update();
 
-    var planeGeo = new PlaneBufferGeometry(100.1, 100.1);
-
     var geometry;
     var material;
 
@@ -264,26 +220,10 @@ function init() {
     var width = window.innerWidth * antialiasFactor; // (tempWidth * window.innerWidth) / 2;
     var height = window.innerHeight * antialiasFactor; // (tempHeight * window.innerHeight) / 2;
     // !START OUTER RING
-    geometry = new RingBufferGeometry(20, 40, 30, 5);
-    wormholeRenderTarget = new WebGLRenderTarget(
-        width, height,
-        {
-            minFilter: LinearFilter,
-            magFilter: NearestFilter,
-            format: RGBFormat
-        }
-    );
-    material = new ShaderMaterial({
-        side: DoubleSide,
-        uniforms: {
-            texture1: { type:'t', value: wormholeRenderTarget.texture }
-        },
-        vertexShader: wormholeVShader,
-        fragmentShader: wormholeFShader,
-        depthTest: false, // TODO decommit
-        // renderOrder: 9999
-    });
-    worm = new Mesh(geometry, material);
+
+    let oss = new OuterSimpleStretch(width, height, 20, 40);
+    worm = oss.getMesh();
+
     var yOrigin = 40; // 37.5;
     var zOrigin = 0; // 20.0;
     worm.position.y = yOrigin;
@@ -466,7 +406,7 @@ function init() {
         }
     });
 
-    effectComposer = newComposer(renderer, scene, camera, wormholeRenderTarget);
+    effectComposer = newComposer(renderer, scene, camera, oss.getRenderTarget());
 }
 
 function newComposer(rendrr, sc, cam, target)
@@ -479,7 +419,6 @@ function newComposer(rendrr, sc, cam, target)
     let scenePass = new RenderPass(sc, cam);
     composer.addPass(scenePass);
     composer.addPass(fxaa);
-    // composer.addPass(fxaa);
     return composer;
 }
 
@@ -530,5 +469,3 @@ function animate() {
     // renderer.setRenderTarget(mainRenderTarget);
     renderer.render(scene, camera);
 }
-
-// TODO FXAA post proc
