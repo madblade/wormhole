@@ -15,6 +15,11 @@ import {
     ShaderLib, UniformsUtils, Color
 } from 'three';
 import {OrbitControls} from './orbit';
+import {Room} from './Room';
+import {EffectComposer} from 'three/examples/jsm/postprocessing/EffectComposer';
+import {RenderPass} from 'three/examples/jsm/postprocessing/RenderPass';
+import {ShaderPass} from 'three/examples/jsm/postprocessing/ShaderPass';
+import {FXAAShader} from 'three/examples/jsm/shaders/FXAAShader';
 
 var wormholeVShader = [
     'varying vec4 pos_frag;\n' +
@@ -61,8 +66,8 @@ var wormholeFShader = [
     '   float pw = pos_frag.w; \n' +
     '   vec2 ratio = outer ? (dist * pxy / pos_frag.w) ' +
     '                      : (-1.0 * (dist) * pxy / pos_frag.w);\n' +
-    '   vec2 correctedUv = (vec2(d2 * pxy / pw) + vec2(1.0)) * 0.5;\n' +
-    // '   vec2 correctedUv = (ratio + vec2(1.0)) * 0.5;\n' +
+    // '   vec2 correctedUv = (vec2(d2 * pxy / pw) + vec2(1.0)) * 0.5;\n' +
+    '   vec2 correctedUv = (ratio + vec2(1.0)) * 0.5;\n' +
     '   gl_FragColor = texture2D(texture1, correctedUv);\n' +
     '}\n'
 ].join('\n');
@@ -200,7 +205,7 @@ var tunnel;
 // var tunnelCamera;
 // var tunnelCameraControls; // ... unoptimized, just for aligning with the other camera
 var cubeCameraControls;
-var lights = [];
+let effectComposer;
 
 init();
 animate();
@@ -420,64 +425,9 @@ function init() {
     smallSphere = new Mesh(geometry, material);
     scene.add(smallSphere);
 
-    // walls
-    var planeTop = new Mesh(planeGeo, new MeshPhongMaterial({ color: 0xffffff }));
-    planeTop.position.y = 100;
-    planeTop.rotateX(Math.PI / 2);
-    scene.add(planeTop);
-
-    var planeBottom = new Mesh(planeGeo, new MeshPhongMaterial({ color: 0xffffff }));
-    planeBottom.rotateX(-Math.PI / 2);
-    scene.add(planeBottom);
-
-    var planeOpposite = new Mesh(planeGeo, new MeshPhongMaterial({ color: 0x7f7fff }));
-    planeOpposite.position.y = 50;
-    planeOpposite.position.z = -50;
-    scene.add(planeOpposite);
-
-    var planeFront = new Mesh(planeGeo, new MeshPhongMaterial({ color: 0x7f7fff }));
-    planeFront.position.z = 50;
-    planeFront.position.y = 50;
-    planeFront.rotateY(Math.PI);
-    scene.add(planeFront);
-
-    var planeRight = new Mesh(planeGeo, new MeshPhongMaterial({ color: 0x00ff00 }));
-    planeRight.position.x = 50;
-    planeRight.position.y = 50;
-    planeRight.rotateY(-Math.PI / 2);
-    scene.add(planeRight);
-
-    var planeLeft = new Mesh(planeGeo, new MeshPhongMaterial({ color: 0xff0000 }));
-    planeLeft.position.x = -50;
-    planeLeft.position.y = 50;
-    planeLeft.rotateY(Math.PI / 2);
-    scene.add(planeLeft);
-
-    // lights
-    var mainLight = new PointLight(0xcccccc, 1.5, 250);
-    mainLight.position.y = 60;
-    lights.push(mainLight);
-    scene.add(mainLight);
-
-    var greenLight = new PointLight(0x00ff00, 0.25, 1000);
-    greenLight.position.set(550, 50, 0);
-    lights.push(greenLight);
-    scene.add(greenLight);
-
-    var redLight = new PointLight(0xff0000, 0.25, 1000);
-    redLight.position.set(-550, 50, 0);
-    lights.push(redLight);
-    scene.add(redLight);
-
-    var blueLight = new PointLight(0x7f7fff, 0.25, 1000);
-    blueLight.position.set(0, 50, 550);
-    lights.push(blueLight);
-    scene.add(blueLight);
-
-    var whiteLight = new PointLight(0xffffff, 1.5, 300);
-    whiteLight.position.set(0, 50, -200);
-    lights.push(whiteLight);
-    scene.add(whiteLight);
+    let room = new Room(0x7f7fff, 0x00ff00, 0xff0000, 0xffffff);
+    let roomMesh = room.getMesh();
+    scene.add(roomMesh);
 
     // Cube tunnel
     var cubeGeo = new BoxGeometry(12.5, 12.5, 12.5);
@@ -515,6 +465,22 @@ function init() {
             default: break;
         }
     });
+
+    effectComposer = newComposer(renderer, scene, camera, wormholeRenderTarget);
+}
+
+function newComposer(rendrr, sc, cam, target)
+{
+    let resolutionX = 1 / window.innerWidth;
+    let resolutionY = 1 / window.innerHeight;
+    let fxaa = new ShaderPass(FXAAShader);
+    fxaa.uniforms['resolution'].value.set(resolutionX, resolutionY);
+    let composer = new EffectComposer(rendrr, target);
+    let scenePass = new RenderPass(sc, cam);
+    composer.addPass(scenePass);
+    composer.addPass(fxaa);
+    // composer.addPass(fxaa);
+    return composer;
 }
 
 // TODO decommit1
@@ -542,12 +508,13 @@ function animate() {
     );
     smallSphere.rotation.y =  Math.PI / 2  - timer * 0.1;
     smallSphere.rotation.z = timer * 0.8;
-    var mainRenderTarget = renderer.getRenderTarget();
+    // var mainRenderTarget = renderer.getRenderTarget();
     scene.remove(worm);
     scene.remove(tunnel);
 
-    renderer.setRenderTarget(wormholeRenderTarget);
-    renderer.render(scene, camera);
+    effectComposer.render();
+    // renderer.setRenderTarget(wormholeRenderTarget);
+    // renderer.render(scene, camera);
 
     // TODO decommit
     // tunnel.visible = false;
@@ -560,7 +527,7 @@ function animate() {
 
     scene.add(worm);
     // scene.add(tunnel); // TODO decommit
-    renderer.setRenderTarget(mainRenderTarget);
+    // renderer.setRenderTarget(mainRenderTarget);
     renderer.render(scene, camera);
 }
 

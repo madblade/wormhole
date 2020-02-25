@@ -1,5 +1,5 @@
 
-const OuterSimpleStretchVS = `
+const OuterReversedStretch = `
 varying vec4 pos_frag;
 varying vec3 v_position;
 attribute vec2 vertex2D;
@@ -11,7 +11,7 @@ void main() {
    gl_Position = pos_frag;
 }`;
 
-const OuterSimpleStretchFS = `
+const OuterReversedStretch = `
 uniform sampler2D texture1;
 varying vec4 pos_frag;
 varying vec3 v_position;
@@ -19,11 +19,9 @@ varying vec2 vUv;
 
 void main() {
    float initialDistance = distance(vec3(0.0), v_position.xyz);
-   float d2 = (initialDistance - 20.0) / 20.0;
+   float d2 = (initialDistance - 30.0) / 10;
    vec2 pxy = pos_frag.xy;
    float pw = pos_frag.w;
    vec2 correctedUv = (vec2(d2 * pxy / pw) + vec2(1.0)) * 0.5;
    gl_FragColor = texture2D(texture1, correctedUv);
 }`;
-
-export { OuterSimpleStretchFS, OuterSimpleStretchVS };
