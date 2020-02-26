@@ -284,7 +284,7 @@ function init() {
     //     20, 32, 32, Math.PI
     // );
     var geometryT = new IcosahedronBufferGeometry(20, 4);
-    geometryT = new CircleGeometry(20, 30);
+    geometryT = new CircleGeometry(20, 64);
     // var materialT = new MeshBasicMaterial({
     //     // color: 0xffffff,
     //     envMap: cubecam.renderTarget.texture,
