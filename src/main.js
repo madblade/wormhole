@@ -8,7 +8,7 @@ import {
     MeshPhongMaterial, NearestFilter, Object3D, PerspectiveCamera,
     RGBFormat, RingBufferGeometry, Scene, ShaderMaterial,
     SphereBufferGeometry, WebGLRenderer, WebGLRenderTarget,
-    ShaderLib, UniformsUtils, Color
+    ShaderLib, UniformsUtils, Color, MeshBasicMaterial, CircleBufferGeometry, SphereGeometry, MeshLambertMaterial, BackSide, CircleGeometry, Vector3
 } from 'three';
 import {OrbitControls} from './orbit';
 import {Room} from './Room';
@@ -17,6 +17,7 @@ import {RenderPass} from 'three/examples/jsm/postprocessing/RenderPass';
 import {ShaderPass} from 'three/examples/jsm/postprocessing/ShaderPass';
 import {FXAAShader} from 'three/examples/jsm/shaders/FXAAShader';
 import {OuterSimpleStretch} from './OuterSimpleStretch';
+import {InnerSimpleCircleFS, InnerSimpleCircleVS} from './InnerSimpleCircle';
 
 // TODO render 1st pass into depth buffer
 // TODO read depht buffer and add perturbation accordingly
@@ -143,7 +144,7 @@ var HEIGHT = window.innerHeight;
 // camera
 var VIEW_ANGLE = 45;
 var ASPECT = WIDTH / HEIGHT;
-var NEAR = 0.001; // TODO decommit
+var NEAR = 0.1; // precision
 var FAR = 500;
 
 var camera;
@@ -196,15 +197,16 @@ function init() {
     cubecam = new CubeCamera(0.1, 1024, 1024);
     cubecam.renderTarget.texture.minFilter = LinearMipMapLinearFilter; // mipmap filter
     cubecam.renderTarget.texture.generateMipmaps = true; // mipmap filter
-    // scene.add(cubecam); // TODO decommit
-    cubecam.position.set(0, 75, -230);
-    // cubecam.rotation.x = Math.PI;
+    scene.add(cubecam); // TODO decommit
+    cubecam.position.set(0, 75, -200);
+    cubecam.rotation.y = Math.PI;
 
-    cubeCameraControls = new OrbitControls(cubecam, renderer.domElement);
-    cubeCameraControls.target.set(0, 75, -231);
-    cubeCameraControls.maxDistance = 400;
-    cubeCameraControls.minDistance = 10;
-    cubeCameraControls.update();
+    // cubeCameraControls = new OrbitControls(cubecam, renderer.domElement);
+    // cubeCameraControls.target.set(0, 75, -200);
+    // cubeCameraControls.maxDistance = 400;
+    // cubeCameraControls.minDistance = 10;
+    // cubeCameraControls.update();
+
     // tunnelCamera.position.set(0, 75, -110);
     // tunnelCameraControls = new OrbitControls(tunnelCamera, renderer.domElement);
     // tunnelCameraControls.target.set(0, 75, -111);
@@ -238,7 +240,6 @@ function init() {
 
 
     // !START INNER RING
-
     // Setup distortion effect
     // var geometryT = new CircleBufferGeometry(20, 30);
     // var geometryT = new SphereBufferGeometry(20, 30, 30, 0,
@@ -274,8 +275,11 @@ function init() {
     //     vertexShader: tunnelVShader,
     //     fragmentShader: tunnelFShader
     // });
-    // var geometryT = new SphereGeometry(20, 16, 16);
+    // var geometryT = new SphereGeometry(
+    //     20, 32, 32, Math.PI
+    // );
     var geometryT = new IcosahedronBufferGeometry(20, 4);
+    geometryT = new CircleGeometry(20, 30);
     // var materialT = new MeshBasicMaterial({
     //     // color: 0xffffff,
     //     envMap: cubecam.renderTarget.texture,
@@ -283,32 +287,54 @@ function init() {
     // });
     // TODO Modify standard shader to remove reflected lights!
     // TODO Customize standard shader for distortion to fade out when camera nears
-    var materialT = new ShaderMaterial({
-        uniforms: UniformsUtils.merge([
-            ShaderLib.standard.uniforms,
-            {
-                envMap: {
-                    type: 't',
-                    value: cubecam.renderTarget
-                }
-            }
-        ]),
-        vertexShader: ShaderLib.standard.vertexShader,
-        fragmentShader: ShaderLib.standard.fragmentShader,
-        depthWrite: false,
-        transparent: true,
-        opacity: 1,
-        lights: true,
+    // var materialT = new ShaderMaterial({
+    //     uniforms:
+    //         UniformsUtils.merge([
+    //             ShaderLib.standard.uniforms,
+    //             {
+    //                 envMap: {
+    //                     type: 't',
+    //                     value: cubecam.renderTarget.texture
+    //                 }
+    //             }
+    //         ]),
+    //     vertexShader: ShaderLib.standard.vertexShader,
+    //     fragmentShader: ShaderLib.standard.fragmentShader,
+    //     depthWrite: false,
+    //     side: BackSide,
+    //     transparent: true,
+    //     opacity: 1,
+    //     lights: true,
+    // });
+    // console.log(ShaderLib.basic.vertexShader);
+    // console.log(ShaderLib.basic.fragmentShader);
+    var materialT  = new ShaderMaterial({
+        uniforms: {
+            env: { type:'t', value: cubecam.renderTarget.texture }
+        },
+        vertexShader: InnerSimpleCircleVS,
+        fragmentShader: InnerSimpleCircleFS,
+        // envMap: cubecam.renderTarget.texture,
+        side: BackSide,
+        // wireframe: true
     });
-    materialT.envMap = cubecam.renderTarget.texture;
-    materialT.uniforms.metalness.value = 1;
-    materialT.uniforms.roughness.value = 0;
-    materialT.uniforms.diffuse.value = new Color(0xffffff);
-    materialT.uniforms.emissive.value = new Color(0x000000);
-    materialT.uniforms.flipEnvMap.value = 1;
+    // materialT = new MeshBasicMaterial({side: BackSide});
+    // materialT.extensions.derivatives = true;
+    // materialT.envMap = cubecam.renderTarget.texture;
+
+    // materialT.uniforms.metalness.value = 1;
+    // materialT.uniforms.roughness.value = 1;
+    // materialT.uniforms.diffuse.value = new Color(0xffffff);
+    // materialT.uniforms.emissive.value = new Color(0x000000);
+    // materialT.uniforms.flipEnvMap.value = 1;
     materialT.needsUpdate = true;
 
-    tunnel = new Mesh(geometryT,
+    var g2 = new CircleBufferGeometry(20, 30);
+    var mat2 = new MeshBasicMaterial({wireframe: true});
+    tunnel = new Mesh(
+        // g2,
+        geometryT,
+        // mat2
         materialT
         //new MeshPhongMaterial({ color: 0xffffff, emissive: 0x444444, side: DoubleSide })
     );
@@ -320,11 +346,11 @@ function init() {
     // var intermediate = new Object3D();
     // intermediate.add(tunnel);
     // tunnelRotation.add(intermediate);
-    // var tunnelControls = new OrbitControls(tunnel, renderer.domElement);
-    // tunnelControls.target.set(0, 40, 0);
-    // tunnelControls.maxDistance = 400;
-    // tunnelControls.minDistance = 10;
-    // tunnelControls.update();
+    var tunnelControls = new OrbitControls(tunnel, renderer.domElement);
+    tunnelControls.target.set(0, 40, 0);
+    tunnelControls.maxDistance = 400;
+    tunnelControls.minDistance = 10;
+    tunnelControls.update();
 
     // var horizontalFOV = 140;
     // var strength = 0.5;
@@ -342,23 +368,21 @@ function init() {
     // scene.add(worm);
 
     sphereGroup = new Object3D();
-    // TODO decommit
     // scene.add(sphereGroup);
 
     geometry = new CylinderBufferGeometry(0.1, 15 * Math.cos(Math.PI / 180 * 30), 0.1, 24, 1);
-    material = new MeshPhongMaterial({ color: 0xffffff, emissive: 0x444444 });
+    material = new MeshPhongMaterial({ color: 0xffffff, emissive: 0x444444, wireframe: true });
     var sphereCap = new Mesh(geometry, material);
     sphereCap.position.y = -15 * Math.sin(Math.PI / 180 * 30) - 0.05;
     sphereCap.rotateX(-Math.PI);
 
-    geometry = new SphereBufferGeometry(15, 24, 24, Math.PI / 2, Math.PI * 2, 0, Math.PI / 180 * 120);
+    geometry = new SphereBufferGeometry(15, 24, 24); // , Math.PI / 2, Math.PI * 2, 0, Math.PI / 180 * 120);
     var halfSphere = new Mesh(geometry, material);
-    halfSphere.add(sphereCap);
+    // halfSphere.add(sphereCap);
     halfSphere.rotateX(-Math.PI / 180 * 135);
     halfSphere.rotateZ(-Math.PI / 180 * 20);
     halfSphere.position.y = 7.5 + 15 * Math.sin(Math.PI / 180 * 30);
-
-    sphereGroup.add(halfSphere);
+    // scene.add(halfSphere);
 
     geometry = new IcosahedronBufferGeometry(5, 0);
     material = new MeshPhongMaterial({ color: 0xffffff, emissive: 0x333333, flatShading: true });
@@ -388,26 +412,41 @@ function init() {
 
     document.addEventListener('keydown', event => {
         switch (event.keyCode) {
-            case 32:
-                cube.position.y += 1.2;
-                halfSphere.position.y++;
+            // OBJ
+            case 51: // fwd
+                halfSphere.position.z++;
                 break;
-            case 16:
-                cube.position.y -= 1.2;
+            case 80: // bwd
+                halfSphere.position.z--;
+                break;
+            case 186: // left
                 halfSphere.position.y--;
                 break;
-            case 83:
+            case 79: // right
+                halfSphere.position.y++;
+                break;
+
+            // CAM
+            case 71: // fwd
                 camera.position.z++;
                 break;
-            case 90:
+            case 40: // bwd
                 camera.position.z--;
+                break;
+            case 38: // left
+                camera.position.y--;
+                break;
+            case 90: // right
+                camera.position.y++;
                 break;
             default: break;
         }
     });
 
     effectComposer = newComposer(renderer, scene, camera, oss.getRenderTarget());
+    // wormholeRenderTarget = oss.getRenderTarget();
 }
+// let wormholeRenderTarget;
 
 function newComposer(rendrr, sc, cam, target)
 {
@@ -456,16 +495,16 @@ function animate() {
     // renderer.render(scene, camera);
 
     // TODO decommit
-    // tunnel.visible = false;
-    // cubecam.update(renderer, scene);
-    // tunnel.visible = true;
+    tunnel.visible = false;
+    cubecam.update(renderer, scene);
+    tunnel.visible = true;
 
     // TODO cubemap
     // renderer.setRenderTarget(tunnelRenderTarget);
     // renderer.render(scene, tunnelCamera);
 
     scene.add(worm);
-    // scene.add(tunnel); // TODO decommit
-    // renderer.setRenderTarget(mainRenderTarget);
+    scene.add(tunnel); // TODO decommit
+    // renderer.setRenderTarget(null);
     renderer.render(scene, camera);
 }
