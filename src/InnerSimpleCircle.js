@@ -53,10 +53,14 @@ void main() {
     float pw = pos_frag.w;
     vec2 correctedUv = (vec2(d2 * pxy / pw) + vec2(1.0)) * 0.5;
 
-    vec2 differenceToCenter = vUv - vec2(0.5);
+    // difference to center
+    vec2 dtc = vUv - vec2(0.5);
+    float x2 = dtc.x * dtc.x; float y2 = dtc.y * dtc.y;
+    float halfSphere = sqrt(1.0 - x2 - y2);
+
     // distance to center normalized to diameter
     float d = distance(vec3(0.0), v_position.xyz) / 20.0;
-    vec3 proj = vec3(differenceToCenter * (1.0 + d * d * d), 0.5);
+    vec3 proj = vec3(dtc, 1.0 / halfSphere);
 
     // distance to middle mapped to half-sphere
     reflectVec = normalize(proj);
