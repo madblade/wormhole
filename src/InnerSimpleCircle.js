@@ -43,15 +43,26 @@ void main() {
     vec3 cameraToFrag = normalize(vWorldPosition - cameraPosition);
     vec3 normal = normalize(vNormal);
     vec3 worldNormal = inverseTransformDirection(normal, viewMatrix);
+    worldNormal = vec3(1.0, 0.0, 0.0);
     float refractionRatio = 1.0;
-    vec3 reflectVec = refract(cameraToFrag, worldNormal, refractionRatio);
+    vec3 reflectVec = reflect(cameraToFrag, worldNormal);
 
     float initialDistance = distance(vec3(0.0), v_position.xyz);
     float d2 = 1.0; /* (initialDistance - 20.0) / 20.0; */
     vec2 pxy = pos_frag.xy;
     float pw = pos_frag.w;
     vec2 correctedUv = (vec2(d2 * pxy / pw) + vec2(1.0)) * 0.5;
-    gl_FragColor = textureCube(env, reflectVec, 0.0);
+
+    vec2 differenceToCenter = vUv - vec2(0.5);
+    // distance to center normalized to diameter
+    float d = distance(vec3(0.0), v_position.xyz) / 20.0;
+    vec3 proj = vec3(differenceToCenter * (1.0 + d * d * d), 0.5);
+
+    // distance to middle mapped to half-sphere
+    reflectVec = normalize(proj);
+
+    vec4 envColor = textureCube(env, vec3(reflectVec.x, reflectVec.y, reflectVec.z), 0.0);
+    gl_FragColor = envColor;
 }`;
 
 let InnerSimpleCircle = function(

@@ -8,7 +8,7 @@ import {
     MeshPhongMaterial, NearestFilter, Object3D, PerspectiveCamera,
     RGBFormat, RingBufferGeometry, Scene, ShaderMaterial,
     SphereBufferGeometry, WebGLRenderer, WebGLRenderTarget,
-    ShaderLib, UniformsUtils, Color, MeshBasicMaterial, CircleBufferGeometry, SphereGeometry, MeshLambertMaterial, BackSide, CircleGeometry, Vector3
+    ShaderLib, UniformsUtils, Color, MeshBasicMaterial, CircleBufferGeometry, SphereGeometry, MeshLambertMaterial, BackSide, CircleGeometry, Vector3, Euler
 } from 'three';
 import {OrbitControls} from './orbit';
 import {Room} from './Room';
@@ -197,15 +197,20 @@ function init() {
     cubecam = new CubeCamera(0.1, 1024, 1024);
     cubecam.renderTarget.texture.minFilter = LinearMipMapLinearFilter; // mipmap filter
     cubecam.renderTarget.texture.generateMipmaps = true; // mipmap filter
-    scene.add(cubecam); // TODO decommit
-    cubecam.position.set(0, 75, -200);
-    cubecam.rotation.y = Math.PI;
+    // scene.add(cubecam); // TODO decommit
+    // cubecam.position.set(0, 75, -200);
+    // cubecam.rotation.y = -Math.PI / 2;
+    // cubecam.setRotationFromEuler(new Euler(0, -Math.PI / 2, 0, 'ZXY'));
+    let cubecamWrapper = new Object3D();
+    cubecamWrapper.position.set(0, 75, -200);
+    cubecamWrapper.add(cubecam);
+    scene.add(cubecamWrapper);
 
-    // cubeCameraControls = new OrbitControls(cubecam, renderer.domElement);
-    // cubeCameraControls.target.set(0, 75, -200);
-    // cubeCameraControls.maxDistance = 400;
-    // cubeCameraControls.minDistance = 10;
-    // cubeCameraControls.update();
+    cubeCameraControls = new OrbitControls(cubecamWrapper, renderer.domElement);
+    cubeCameraControls.target.set(0, 75, -200);
+    cubeCameraControls.maxDistance = 400;
+    cubeCameraControls.minDistance = 10;
+    cubeCameraControls.update();
 
     // tunnelCamera.position.set(0, 75, -110);
     // tunnelCameraControls = new OrbitControls(tunnelCamera, renderer.domElement);
