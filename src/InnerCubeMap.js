@@ -1,6 +1,6 @@
 import {
     BackSide, CircleGeometry, CubeCamera, DoubleSide,
-    LinearMipMapLinearFilter, Mesh, NearestFilter, RGBFormat,
+    LinearMipMapLinearFilter, Mesh, NearestFilter, Object3D, RGBFormat,
     RingBufferGeometry, ShaderMaterial, WebGLRenderTarget
 } from 'three';
 
@@ -73,7 +73,7 @@ void main() {
 
 let InnerCubeMap = function(
     windowWidth, windowHeight,
-    innerRadius)
+    innerRadius, entry, exit)
 {
     this.cubeCam = new CubeCamera(0.1, 1024, 1024);
     this.cubeCam.renderTarget.texture.minFilter = LinearMipMapLinearFilter;
@@ -93,7 +93,38 @@ let InnerCubeMap = function(
     });
     this.material.needsUpdate = true;
 
+    this.entry = entry;
     this.mesh = new Mesh(this.geometry, this.material);
+    this.mesh.position.set(this.entry.x, this.entry.y, this.entry.z);
+
+    this.exit = exit;
+    this.wrapper = new Object3D();
+    this.wrapper.position.set(this.exit.x, this.exit.y, this.exit.z);
+    this.wrapper.add(this.cubeCam);
+};
+
+InnerCubeMap.prototype.updateCamPosition = function(p)
+{
+    this.wrapper.position.set(
+        this.exit.x + p.x - this.entry.x,
+        this.exit.y + p.y - this.entry.y,
+        this.exit.z + p.z - this.entry.z
+    );
+};
+
+InnerCubeMap.prototype.getExit = function()
+{
+    return this.exit;
+};
+
+InnerCubeMap.prototype.getEntry = function()
+{
+    return this.entry;
+};
+
+InnerCubeMap.prototype.getWrapper = function()
+{
+    return this.wrapper;
 };
 
 InnerCubeMap.prototype.getCubeCam = function()

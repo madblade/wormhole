@@ -69,7 +69,7 @@ function newComposer(rendrr, sc, cam, target)
 }
 
 function addListeners(
-    camera, outerRing, innerCircle, cubeCam,
+    camera, icm,
     halfSphere, state
 ) {
     document.addEventListener('keydown', event => {
@@ -112,9 +112,10 @@ function addListeners(
         // rotate main camera
         camera.rotateZ(-relX * 0.002);
         camera.rotateX(-relY * 0.002);
-        // rotate inner circle
-        // rotate outer circle
         // rotate cube camera
+        // TODO test that
+        // icm.getWrapper().rotation.z = camera.getZRotation();
+        // icm.getWrapper().rotation.x = camera.getXRotation();
     });
 
     document.addEventListener('mousedown', event => {

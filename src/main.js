@@ -2,7 +2,7 @@
 // scene size
 import {
     Object3D, PerspectiveCamera,
-    Scene,
+    Scene, Vector3,
     WebGLRenderer
 } from 'three';
 import {OrbitControls} from './orbit';
@@ -43,15 +43,14 @@ let state = {
     rightDown: false,
     backDown: false
 };
-let cameraControls;
-let cubecam;
+let oss;
+let icm;
+
+let cubeCam;
+let cubeCamWrapper;
 
 let halfSphere;
 let smallSphere;
-let outerRing;
-
-let innerRing;
-let cubeCameraControls;
 let effectComposer;
 
 // TODO controls
@@ -85,47 +84,28 @@ function init() {
     let width = window.innerWidth * antialiasFactor;
     let height = window.innerHeight * antialiasFactor;
 
+    let wormholeEntry = new Vector3(0, 40, 0);
+    let wormholeExit = new Vector3(0, 50, -200);
+
     // Outer ring
-    let oss = new OuterSimpleStretch(width, height, 20, 40);
-    outerRing = oss.getMesh();
-    let yOrigin = 40;
-    let zOrigin = 0;
-    outerRing.position.y = yOrigin;
-    outerRing.position.z = zOrigin;
-    // let wormControls = new OrbitControls(worm, renderer.domElement);
-    // wormControls.target.set(0, 40, 0);
-    // wormControls.maxDistance = 400;
-    // wormControls.minDistance = 10;
-    // wormControls.update();
+    oss = new OuterSimpleStretch(width, height, 20, 40,
+        wormholeEntry
+    );
 
     // Inner ring
-    let icm = new InnerCubeMap(width, height, 20);
+    icm = new InnerCubeMap(width, height, 20,
+        wormholeEntry,
+        wormholeExit
+    );
 
     // tunnel camera
     // tunnelCamera = new PerspectiveCamera(120, ASPECT, 1, 1000000);
     // tunnelCamera = new CubeCamera(1, 100000, 2);
-    cubecam = icm.getCubeCam();
-    innerRing = icm.getMesh();
-    innerRing.position.y = 40;
-    innerRing.position.z = 0;
+    // cubeCam = icm.getCubeCam();
 
     // Rotate cube camera
-    let cubecamWrapper = new Object3D();
-    cubecamWrapper.position.set(0, 75, -200);
-    cubecamWrapper.add(cubecam);
-    scene.add(cubecamWrapper);
-    // cubeCameraControls = new OrbitControls(cubecamWrapper, renderer.domElement);
-    // cubeCameraControls.target.set(0, 75, -200);
-    // cubeCameraControls.maxDistance = 400;
-    // cubeCameraControls.minDistance = 10;
-    // cubeCameraControls.update();
-
-    // Rotate inner wormhole
-    // let tunnelControls = new OrbitControls(tunnel, renderer.domElement);
-    // tunnelControls.target.set(0, 40, 0);
-    // tunnelControls.maxDistance = 400;
-    // tunnelControls.minDistance = 10;
-    // tunnelControls.update();
+    cubeCamWrapper = icm.getWrapper();
+    scene.add(cubeCamWrapper);
 
     // Rendering
     effectComposer = newComposer(renderer, scene, camera, oss.getRenderTarget());
@@ -146,8 +126,9 @@ function init() {
 
     // Controls
     addListeners(
-        cameraWrapper, outerRing, innerRing, cubecamWrapper,
-        halfSphere, state);
+        cameraWrapper, icm,
+        halfSphere, state
+    );
 }
 
 // TODO 1. log camera distance to blackhole object
@@ -180,29 +161,33 @@ function animate() {
         state.forwardDown, state.backDown, state.rightDown, state.leftDown, 0, 0
     ], false);
     cameraWrapper.setCameraPosition(
-        p.x + fw[0], p.y + fw[1], p.z + fw[2]);
-    innerRing.lookAt(cameraWrapper.getCameraPosition());
+        p.x + fw[0], p.y + fw[1], p.z + fw[2]
+    );
+    let innerCircle = icm.getMesh();
+    let outerRing = oss.getMesh();
+    innerCircle.lookAt(cameraWrapper.getCameraPosition());
     outerRing.lookAt(cameraWrapper.getCameraPosition());
+    icm.updateCamPosition(cameraWrapper.getCameraPosition());
 
     // let mainRenderTarget = renderer.getRenderTarget();
     scene.remove(outerRing);
-    scene.remove(innerRing);
+    scene.remove(innerCircle);
 
     effectComposer.render();
     // renderer.setRenderTarget(wormholeRenderTarget);
     // renderer.render(scene, camera);
 
     // TODO decommit
-    innerRing.visible = false;
-    cubecam.update(renderer, scene);
-    innerRing.visible = true;
+    innerCircle.visible = false;
+    icm.getCubeCam().update(renderer, scene);
+    innerCircle.visible = true;
 
     // TODO non-cubemap inner
     // renderer.setRenderTarget(tunnelRenderTarget);
     // renderer.render(scene, tunnelCamera);
 
     scene.add(outerRing);
-    scene.add(innerRing); // TODO decommit
+    scene.add(innerCircle); // TODO decommit
     // renderer.setRenderTarget(null);
     renderer.render(scene, camera);
 }

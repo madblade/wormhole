@@ -33,7 +33,8 @@ void main() {
 
 let OuterSimpleStretch = function(
     windowWidth, windowHeight,
-    innerRadius, outerRadius)
+    innerRadius, outerRadius,
+    origin)
 {
     this.renderTarget = new WebGLRenderTarget(
         windowWidth, windowHeight,
@@ -60,7 +61,14 @@ let OuterSimpleStretch = function(
         // TODO Think about this when there are multiple wormholes.
     });
 
+    this.origin = origin;
     this.mesh = new Mesh(this.geometry, this.material);
+    this.mesh.position.set(origin.x, origin.y, origin.z);
+};
+
+OuterSimpleStretch.prototype.getOrigin = function()
+{
+    return this.origin;
 };
 
 OuterSimpleStretch.prototype.getMesh = function()
