@@ -12,8 +12,9 @@ import {RenderPass} from 'three/examples/jsm/postprocessing/RenderPass';
 import {ShaderPass} from 'three/examples/jsm/postprocessing/ShaderPass';
 import {FXAAShader} from 'three/examples/jsm/shaders/FXAAShader';
 import {OuterSimpleStretch} from './OuterSimpleStretch';
-import {addCubeWall, addListeners, getHalfSphere, getSmallSphere} from './factory';
+import {addCubeWall, addListeners, getHalfSphere, getSmallSphere, newComposer} from './factory';
 import {InnerCubeMap} from './InnerCubeMap';
+import {CameraWrapper} from './CameraWrapper';
 
 // Depth buffer interesting articles
 // https://threejs.org/examples/webgl_depth_texture.html
@@ -21,35 +22,46 @@ import {InnerCubeMap} from './InnerCubeMap';
 // https://stackoverflow.com/questions/23362076/opengl-how-to-access-depth-buffer-values-or-gl-fragcoord-z-vs-rendering-d
 
 // scene size
-var WIDTH = window.innerWidth;
-var HEIGHT = window.innerHeight;
+let WIDTH = window.innerWidth;
+let HEIGHT = window.innerHeight;
 
 // camera
-var VIEW_ANGLE = 45;
-var ASPECT = WIDTH / HEIGHT;
-var NEAR = 0.1; // precision
-var FAR = 5000;
+let VIEW_ANGLE = 45;
+let ASPECT = WIDTH / HEIGHT;
+let NEAR = 0.1; // precision
+let FAR = 5000;
 
-var camera;
-var scene;
-var renderer;
+let cameraWrapper;
+let camera;
+let scene;
+let renderer;
 
-var cameraControls;
-var cubecam;
+let state = {
+    mouseDown: false,
+    forwardDown: false,
+    leftDown: false,
+    rightDown: false,
+    backDown: false
+};
+let cameraControls;
+let cubecam;
 
-var halfSphere;
-var smallSphere;
-var worm;
+let halfSphere;
+let smallSphere;
+let worm;
 
-var tunnel;
-var cubeCameraControls;
+let tunnel;
+let cubeCameraControls;
 let effectComposer;
+
+// TODO controls
+// TODO control widget
 
 init();
 animate();
 
 function init() {
-    var container = document.getElementById('container');
+    let container = document.getElementById('container');
 
     // renderer
     renderer = new WebGLRenderer({ antialias: true });
@@ -61,31 +73,41 @@ function init() {
     scene = new Scene();
 
     // camera
-    camera = new PerspectiveCamera(VIEW_ANGLE, ASPECT, NEAR, FAR);
-    camera.position.set(0, 75, 160);
-    cameraControls = new OrbitControls(camera, renderer.domElement);
-    cameraControls.target.set(0, 40, 0);
-    cameraControls.maxDistance = 400;
-    cameraControls.minDistance = 10;
-    cameraControls.update();
+    cameraWrapper = new CameraWrapper(VIEW_ANGLE, ASPECT, NEAR, FAR);
+    camera = cameraWrapper.getRecorder();
+    cameraWrapper.setUpRotation(-Math.PI / 2, 0, 0);
+    cameraWrapper.setXRotation(Math.PI / 2);
+    cameraWrapper.setCameraPosition(0, 75, 160);
+    scene.add(cameraWrapper.get3DObject());
+    // camera.position.set(0, 75, 160);
+
+    // camera.updateProjectionMatrix();
+    // camera.updateMatrixWorld();
+    // camera.matrixWorldInverse.getInverse(camera.matrixWorld);
+
+    // cameraControls = new OrbitControls(camera, renderer.domElement);
+    // cameraControls.target.set(0, 40, 0);
+    // cameraControls.maxDistance = 400;
+    // cameraControls.minDistance = 10;
+    // cameraControls.update();
 
     // Wormhole
-    var antialiasFactor = 1;
-    var width = window.innerWidth * antialiasFactor;
-    var height = window.innerHeight * antialiasFactor;
+    let antialiasFactor = 1;
+    let width = window.innerWidth * antialiasFactor;
+    let height = window.innerHeight * antialiasFactor;
 
     // Outer ring
     let oss = new OuterSimpleStretch(width, height, 20, 40);
     worm = oss.getMesh();
-    var yOrigin = 40;
-    var zOrigin = 0;
+    let yOrigin = 40;
+    let zOrigin = 0;
     worm.position.y = yOrigin;
     worm.position.z = zOrigin;
-    var wormControls = new OrbitControls(worm, renderer.domElement);
-    wormControls.target.set(0, 40, 0);
-    wormControls.maxDistance = 400;
-    wormControls.minDistance = 10;
-    wormControls.update();
+    // let wormControls = new OrbitControls(worm, renderer.domElement);
+    // wormControls.target.set(0, 40, 0);
+    // wormControls.maxDistance = 400;
+    // wormControls.minDistance = 10;
+    // wormControls.update();
 
     // Inner ring
     let icm = new InnerCubeMap(width, height, 20);
@@ -103,18 +125,18 @@ function init() {
     cubecamWrapper.position.set(0, 75, -200);
     cubecamWrapper.add(cubecam);
     scene.add(cubecamWrapper);
-    cubeCameraControls = new OrbitControls(cubecamWrapper, renderer.domElement);
-    cubeCameraControls.target.set(0, 75, -200);
-    cubeCameraControls.maxDistance = 400;
-    cubeCameraControls.minDistance = 10;
-    cubeCameraControls.update();
+    // cubeCameraControls = new OrbitControls(cubecamWrapper, renderer.domElement);
+    // cubeCameraControls.target.set(0, 75, -200);
+    // cubeCameraControls.maxDistance = 400;
+    // cubeCameraControls.minDistance = 10;
+    // cubeCameraControls.update();
 
     // Rotate inner wormhole
-    var tunnelControls = new OrbitControls(tunnel, renderer.domElement);
-    tunnelControls.target.set(0, 40, 0);
-    tunnelControls.maxDistance = 400;
-    tunnelControls.minDistance = 10;
-    tunnelControls.update();
+    // let tunnelControls = new OrbitControls(tunnel, renderer.domElement);
+    // tunnelControls.target.set(0, 40, 0);
+    // tunnelControls.maxDistance = 400;
+    // tunnelControls.minDistance = 10;
+    // tunnelControls.update();
 
     // Rendering
     effectComposer = newComposer(renderer, scene, camera, oss.getRenderTarget());
@@ -134,20 +156,7 @@ function init() {
     addCubeWall(scene);
 
     // Controls
-    addListeners(camera, halfSphere);
-}
-
-function newComposer(rendrr, sc, cam, target)
-{
-    let resolutionX = 1 / window.innerWidth;
-    let resolutionY = 1 / window.innerHeight;
-    let fxaa = new ShaderPass(FXAAShader);
-    fxaa.uniforms['resolution'].value.set(resolutionX, resolutionY);
-    let composer = new EffectComposer(rendrr, target);
-    let scenePass = new RenderPass(sc, cam);
-    composer.addPass(scenePass);
-    composer.addPass(fxaa);
-    return composer;
+    addListeners(cameraWrapper, halfSphere, state);
 }
 
 // TODO 1. log camera distance to blackhole object
@@ -164,8 +173,8 @@ function newComposer(rendrr, sc, cam, target)
 function animate() {
     requestAnimationFrame(animate);
 
-    var timer = Date.now() * 0.01;
-
+    // update objects
+    let timer = Date.now() * 0.01;
     smallSphere.position.set(
         Math.cos(timer * 0.1) * 30,
         Math.abs(Math.cos(timer * 0.2)) * 20 + 5,
@@ -174,7 +183,17 @@ function animate() {
     smallSphere.rotation.y =  Math.PI / 2  - timer * 0.1;
     smallSphere.rotation.z = timer * 0.8;
 
-    // var mainRenderTarget = renderer.getRenderTarget();
+    // update camera
+    let p = cameraWrapper.getCameraPosition();
+    let fw = cameraWrapper.getForwardVector([
+        // 0, 0, state.rightDown, state.leftDown, state.backDown, state.forwardDown
+        state.forwardDown, state.backDown, state.rightDown, state.leftDown, 0, 0
+    ], false);
+    // console.log(fw);
+    cameraWrapper.setCameraPosition(
+        p.x + fw[0], p.y + fw[1], p.z + fw[2]);
+
+    // let mainRenderTarget = renderer.getRenderTarget();
     scene.remove(worm);
     scene.remove(tunnel);
 

@@ -1,4 +1,8 @@
 import {BoxGeometry, CylinderBufferGeometry, IcosahedronBufferGeometry, Mesh, MeshPhongMaterial, SphereBufferGeometry} from 'three';
+import {ShaderPass} from 'three/examples/jsm/postprocessing/ShaderPass';
+import {FXAAShader} from 'three/examples/jsm/shaders/FXAAShader';
+import {EffectComposer} from 'three/examples/jsm/postprocessing/EffectComposer';
+import {RenderPass} from 'three/examples/jsm/postprocessing/RenderPass';
 
 function getHalfSphere()
 {
@@ -49,43 +53,72 @@ function addCubeWall(scene)
             scene.add(cube2);
         }
     }
-
 }
 
-function addListeners(camera, halfSphere)
+function newComposer(rendrr, sc, cam, target)
 {
+    let resolutionX = 1 / window.innerWidth;
+    let resolutionY = 1 / window.innerHeight;
+    let fxaa = new ShaderPass(FXAAShader);
+    fxaa.uniforms['resolution'].value.set(resolutionX, resolutionY);
+    let composer = new EffectComposer(rendrr, target);
+    let scenePass = new RenderPass(sc, cam);
+    composer.addPass(scenePass);
+    composer.addPass(fxaa);
+    return composer;
+}
+
+function addListeners(
+    camera, halfSphere, state
+) {
     document.addEventListener('keydown', event => {
         switch (event.keyCode) {
-            // OBJ
             case 51: // fwd
-                halfSphere.position.z++;
-                break;
+                state.forwardDown = true; break;
             case 80: // bwd
-                halfSphere.position.z--;
-                break;
+                state.backDown = true; break;
             case 186: // left
-                halfSphere.position.y--;
-                break;
+                state.leftDown = true; break;
             case 79: // right
-                halfSphere.position.y++;
-                break;
-
-            // CAM
-            case 71: // fwd
-                camera.position.z++;
-                break;
-            case 40: // bwd
-                camera.position.z--;
-                break;
-            case 38: // left
-                camera.position.y--;
-                break;
-            case 90: // right
-                camera.position.y++;
-                break;
+                state.rightDown = true; break;
+            // right hand
+            // case 71: // fwd
+            // case 40: // bwd
+            // case 38: // left
+            // case 90: // right
             default: break;
         }
     });
+
+    document.addEventListener('keyup', event => {
+        switch (event.keyCode) {
+            case 51: // fwd
+                state.forwardDown = false; break;
+            case 80: // bwd
+                state.backDown = false; break;
+            case 186: // left
+                state.leftDown = false; break;
+            case 79: // right
+                state.rightDown = false; break;
+            default: break;
+        }
+    });
+
+    document.addEventListener('mousemove', event => {
+        if (!state.mouseDown) return;
+        let relX = event.movementX || event.mozMovementX || event.webkitMovementX || 0;
+        let relY = event.movementY || event.mozMovementY || event.webkitMovementY || 0;
+        camera.rotateZ(-relX * 0.002);
+        camera.rotateX(-relY * 0.002);
+    });
+
+    document.addEventListener('mousedown', event => {
+        state.mouseDown = true;
+    });
+
+    document.addEventListener('mouseup', event => {
+        state.mouseDown = false;
+    })
 }
 
-export { addListeners, getHalfSphere, getSmallSphere, addCubeWall };
+export { addListeners, getHalfSphere, getSmallSphere, addCubeWall, newComposer };

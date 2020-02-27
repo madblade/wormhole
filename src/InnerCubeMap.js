@@ -60,7 +60,8 @@ void main() {
     // distance to center normalized to diameter
     float d = distance(vec3(0.0), v_position.xyz) / 20.0;
     vec2 f = d * dtc; float x = f.x; float y = f.y;
-    float halfSphere = sqrt(1.0 - x * x - y * y);
+    float p = 2.0;
+    float halfSphere = pow(1.0 - pow(x, p) - pow(y, p), 1.0 / p);
     vec3 proj = vec3(f, halfSphere);
 
     // distance to middle mapped to half-sphere
