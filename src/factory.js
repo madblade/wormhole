@@ -82,6 +82,10 @@ function addListeners(
                 state.leftDown = true; break;
             case 79: // right
                 state.rightDown = true; break;
+            case 16:
+                state.downDown = true; break;
+            case 32:
+                state.upDown = true; break;
             // right hand
             // case 71: // fwd
             // case 40: // bwd
@@ -101,6 +105,10 @@ function addListeners(
                 state.leftDown = false; break;
             case 79: // right
                 state.rightDown = false; break;
+            case 16:
+                state.downDown = false; break;
+            case 32:
+                state.upDown = false; break;
             default: break;
         }
     });
@@ -113,9 +121,9 @@ function addListeners(
         camera.rotateZ(-relX * 0.002);
         camera.rotateX(-relY * 0.002);
         // rotate cube camera
-        // TODO test that
-        icm.setZRotation(camera.getZRotation());
-        icm.setXRotation(camera.getXRotation());
+        // TODO rotate only in animate
+        // icm.setZRotation(camera.getZRotation());
+        // icm.setXRotation(camera.getXRotation());
     });
 
     document.addEventListener('mousedown', event => {

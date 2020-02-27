@@ -1,5 +1,5 @@
 import {
-    BackSide, CircleGeometry, CubeCamera, DoubleSide,
+    BackSide, CircleGeometry, CubeCamera, DoubleSide, FrontSide,
     LinearMipMapLinearFilter, Mesh, NearestFilter, Object3D, RGBFormat,
     RingBufferGeometry, ShaderMaterial, WebGLRenderTarget
 } from 'three';
@@ -82,7 +82,7 @@ let InnerCubeMap = function(
     this.geometry = new CircleGeometry(innerRadius, 128);
 
     this.material = new ShaderMaterial({
-        side: DoubleSide,
+        side: FrontSide,
         uniforms: {
             env: { type:'t', value: this.cubeCam.renderTarget.texture }
         },

@@ -1,11 +1,10 @@
 
 // scene size
 import {
-    Object3D, PerspectiveCamera,
+    Quaternion,
     Scene, Vector3,
     WebGLRenderer
 } from 'three';
-import {OrbitControls} from './orbit';
 import {Room} from './Room';
 import {EffectComposer} from 'three/examples/jsm/postprocessing/EffectComposer';
 import {RenderPass} from 'three/examples/jsm/postprocessing/RenderPass';
@@ -41,13 +40,12 @@ let state = {
     forwardDown: false,
     leftDown: false,
     rightDown: false,
-    backDown: false
+    backDown: false,
+    downDown: false,
+    upDown: false
 };
 let oss;
 let icm;
-
-let cubeCam;
-let cubeCamWrapper;
 
 let halfSphere;
 let smallSphere;
@@ -106,7 +104,7 @@ function init() {
     // Rotate cube camera
     icm.setUpRotation(-Math.PI / 2, Math.PI, 0);
     icm.setXRotation(Math.PI / 2);
-    cubeCamWrapper = icm.getWrapper();
+    let cubeCamWrapper = icm.getWrapper();
     scene.add(cubeCamWrapper);
 
     // Rendering
@@ -160,16 +158,33 @@ function animate() {
     // update camera
     let p = cameraWrapper.getCameraPosition();
     let fw = cameraWrapper.getForwardVector([
-        state.forwardDown, state.backDown, state.rightDown, state.leftDown, 0, 0
+        state.forwardDown, state.backDown, state.rightDown, state.leftDown,
+        state.upDown, state.downDown
     ], false);
     cameraWrapper.setCameraPosition(
         p.x + fw[0], p.y + fw[1], p.z + fw[2]
     );
     let innerCircle = icm.getMesh();
     let outerRing = oss.getMesh();
+
+    let rec = cameraWrapper.getRecorder();
+    let q = new Quaternion();
+    rec.getWorldQuaternion(q);
+    let i = new Quaternion();
+    i.setFromAxisAngle(new Vector3(0, 1, 0).normalize(), Math.PI);
+    // q.multiply(i);
+
+    innerCircle.setRotationFromQuaternion(q); // reset up vector
+    outerRing.setRotationFromQuaternion(q); // ditto
     innerCircle.lookAt(cameraWrapper.getCameraPosition());
     outerRing.lookAt(cameraWrapper.getCameraPosition());
-    // icm.updateCamPosition(cameraWrapper.getCameraPosition());
+    let exit = icm.getExit();
+    let entry = icm.getEntry();
+    let to = new Vector3(
+        exit.x - p.x + entry.x, exit.y - p.y + entry.y, exit.z - p.z + entry.z
+    );
+    let cc = icm.getCubeCam();
+    cc.lookAt(to);
 
     // let mainRenderTarget = renderer.getRenderTarget();
     scene.remove(outerRing);
