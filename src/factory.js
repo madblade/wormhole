@@ -114,8 +114,8 @@ function addListeners(
         camera.rotateX(-relY * 0.002);
         // rotate cube camera
         // TODO test that
-        // icm.getWrapper().rotation.z = camera.getZRotation();
-        // icm.getWrapper().rotation.x = camera.getXRotation();
+        icm.setZRotation(camera.getZRotation());
+        icm.setXRotation(camera.getXRotation());
     });
 
     document.addEventListener('mousedown', event => {

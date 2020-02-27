@@ -67,7 +67,7 @@ void main() {
     // distance to middle mapped to half-sphere
     reflectVec = normalize(proj);
 
-    vec4 envColor = textureCube(env, vec3(reflectVec.x, reflectVec.y, reflectVec.z), 0.0);
+    vec4 envColor = textureCube(env, vec3(-reflectVec.x, reflectVec.y, reflectVec.z), 0.0);
     gl_FragColor = envColor;
 }`;
 
@@ -98,9 +98,29 @@ let InnerCubeMap = function(
     this.mesh.position.set(this.entry.x, this.entry.y, this.entry.z);
 
     this.exit = exit;
+    this.pitch = new Object3D();
+    this.yaw = new Object3D();
     this.wrapper = new Object3D();
     this.wrapper.position.set(this.exit.x, this.exit.y, this.exit.z);
-    this.wrapper.add(this.cubeCam);
+    this.wrapper.rotation.reorder('ZYX');
+    this.pitch.add(this.cubeCam);
+    this.yaw.add(this.pitch);
+    this.wrapper.add(this.yaw);
+};
+
+InnerCubeMap.prototype.setXRotation = function(x)
+{
+    this.pitch.rotation.x = x;
+};
+
+InnerCubeMap.prototype.setZRotation = function(z)
+{
+    this.yaw.rotation.z = z;
+};
+
+InnerCubeMap.prototype.setUpRotation = function(x, y, z)
+{
+    this.wrapper.rotation.set(x, y, z);
 };
 
 InnerCubeMap.prototype.updateCamPosition = function(p)

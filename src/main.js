@@ -104,6 +104,8 @@ function init() {
     // cubeCam = icm.getCubeCam();
 
     // Rotate cube camera
+    icm.setUpRotation(-Math.PI / 2, Math.PI, 0);
+    icm.setXRotation(Math.PI / 2);
     cubeCamWrapper = icm.getWrapper();
     scene.add(cubeCamWrapper);
 
@@ -167,7 +169,7 @@ function animate() {
     let outerRing = oss.getMesh();
     innerCircle.lookAt(cameraWrapper.getCameraPosition());
     outerRing.lookAt(cameraWrapper.getCameraPosition());
-    icm.updateCamPosition(cameraWrapper.getCameraPosition());
+    // icm.updateCamPosition(cameraWrapper.getCameraPosition());
 
     // let mainRenderTarget = renderer.getRenderTarget();
     scene.remove(outerRing);
