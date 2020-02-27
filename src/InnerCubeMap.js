@@ -59,9 +59,18 @@ void main() {
 
     // distance to center normalized to diameter
     float d = distance(vec3(0.0), v_position.xyz) / 20.0;
-    vec2 f = d * dtc; float x = f.x; float y = f.y;
-    float p = 2.0;
-    float halfSphere = pow(1.0 - pow(x, p) - pow(y, p), 1.0 / p);
+    float fac = 1.2;
+    float fr = 1.0 / fac;
+    bool small = d < fr;
+    float left = 1.0 / fr; float right = 1.0 / (1.0 - fr);
+
+    vec2 f = small ? left * d * dtc : right * (1.0 - d) * dtc;
+    float x = f.x; float y = f.y;
+
+    float x2 = small ? x * x : pow(x, 2.0);
+    float y2 = small ? y * y : pow(y, 2.0);
+
+    float halfSphere = (small ? 1.0 : -1.0) * sqrt(1.0 - x2 - y2);
     vec3 proj = vec3(f, halfSphere);
 
     // distance to middle mapped to half-sphere

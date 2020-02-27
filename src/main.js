@@ -170,9 +170,6 @@ function animate() {
     let rec = cameraWrapper.getRecorder();
     let q = new Quaternion();
     rec.getWorldQuaternion(q);
-    let i = new Quaternion();
-    i.setFromAxisAngle(new Vector3(0, 1, 0).normalize(), Math.PI);
-    // q.multiply(i);
 
     innerCircle.setRotationFromQuaternion(q); // reset up vector
     outerRing.setRotationFromQuaternion(q); // ditto
@@ -194,7 +191,6 @@ function animate() {
     // renderer.setRenderTarget(wormholeRenderTarget);
     // renderer.render(scene, camera);
 
-    // TODO decommit
     innerCircle.visible = false;
     icm.getCubeCam().update(renderer, scene);
     innerCircle.visible = true;
@@ -204,7 +200,6 @@ function animate() {
     // renderer.render(scene, tunnelCamera);
 
     scene.add(outerRing);
-    scene.add(innerCircle); // TODO decommit
-    // renderer.setRenderTarget(null);
+    scene.add(innerCircle);
     renderer.render(scene, camera);
 }
