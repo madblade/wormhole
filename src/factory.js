@@ -69,7 +69,8 @@ function newComposer(rendrr, sc, cam, target)
 }
 
 function addListeners(
-    camera, halfSphere, state
+    camera, outerRing, innerCircle, cubeCam,
+    halfSphere, state
 ) {
     document.addEventListener('keydown', event => {
         switch (event.keyCode) {
@@ -108,8 +109,12 @@ function addListeners(
         if (!state.mouseDown) return;
         let relX = event.movementX || event.mozMovementX || event.webkitMovementX || 0;
         let relY = event.movementY || event.mozMovementY || event.webkitMovementY || 0;
+        // rotate main camera
         camera.rotateZ(-relX * 0.002);
         camera.rotateX(-relY * 0.002);
+        // rotate inner circle
+        // rotate outer circle
+        // rotate cube camera
     });
 
     document.addEventListener('mousedown', event => {
@@ -118,7 +123,7 @@ function addListeners(
 
     document.addEventListener('mouseup', event => {
         state.mouseDown = false;
-    })
+    });
 }
 
 export { addListeners, getHalfSphere, getSmallSphere, addCubeWall, newComposer };

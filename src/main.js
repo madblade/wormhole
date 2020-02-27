@@ -48,9 +48,9 @@ let cubecam;
 
 let halfSphere;
 let smallSphere;
-let worm;
+let outerRing;
 
-let tunnel;
+let innerRing;
 let cubeCameraControls;
 let effectComposer;
 
@@ -79,17 +79,6 @@ function init() {
     cameraWrapper.setXRotation(Math.PI / 2);
     cameraWrapper.setCameraPosition(0, 75, 160);
     scene.add(cameraWrapper.get3DObject());
-    // camera.position.set(0, 75, 160);
-
-    // camera.updateProjectionMatrix();
-    // camera.updateMatrixWorld();
-    // camera.matrixWorldInverse.getInverse(camera.matrixWorld);
-
-    // cameraControls = new OrbitControls(camera, renderer.domElement);
-    // cameraControls.target.set(0, 40, 0);
-    // cameraControls.maxDistance = 400;
-    // cameraControls.minDistance = 10;
-    // cameraControls.update();
 
     // Wormhole
     let antialiasFactor = 1;
@@ -98,11 +87,11 @@ function init() {
 
     // Outer ring
     let oss = new OuterSimpleStretch(width, height, 20, 40);
-    worm = oss.getMesh();
+    outerRing = oss.getMesh();
     let yOrigin = 40;
     let zOrigin = 0;
-    worm.position.y = yOrigin;
-    worm.position.z = zOrigin;
+    outerRing.position.y = yOrigin;
+    outerRing.position.z = zOrigin;
     // let wormControls = new OrbitControls(worm, renderer.domElement);
     // wormControls.target.set(0, 40, 0);
     // wormControls.maxDistance = 400;
@@ -116,9 +105,9 @@ function init() {
     // tunnelCamera = new PerspectiveCamera(120, ASPECT, 1, 1000000);
     // tunnelCamera = new CubeCamera(1, 100000, 2);
     cubecam = icm.getCubeCam();
-    tunnel = icm.getMesh();
-    tunnel.position.y = 40;
-    tunnel.position.z = 0;
+    innerRing = icm.getMesh();
+    innerRing.position.y = 40;
+    innerRing.position.z = 0;
 
     // Rotate cube camera
     let cubecamWrapper = new Object3D();
@@ -156,7 +145,9 @@ function init() {
     addCubeWall(scene);
 
     // Controls
-    addListeners(cameraWrapper, halfSphere, state);
+    addListeners(
+        cameraWrapper, outerRing, innerRing, cubecamWrapper,
+        halfSphere, state);
 }
 
 // TODO 1. log camera distance to blackhole object
@@ -186,32 +177,32 @@ function animate() {
     // update camera
     let p = cameraWrapper.getCameraPosition();
     let fw = cameraWrapper.getForwardVector([
-        // 0, 0, state.rightDown, state.leftDown, state.backDown, state.forwardDown
         state.forwardDown, state.backDown, state.rightDown, state.leftDown, 0, 0
     ], false);
-    // console.log(fw);
     cameraWrapper.setCameraPosition(
         p.x + fw[0], p.y + fw[1], p.z + fw[2]);
+    innerRing.lookAt(cameraWrapper.getCameraPosition());
+    outerRing.lookAt(cameraWrapper.getCameraPosition());
 
     // let mainRenderTarget = renderer.getRenderTarget();
-    scene.remove(worm);
-    scene.remove(tunnel);
+    scene.remove(outerRing);
+    scene.remove(innerRing);
 
     effectComposer.render();
     // renderer.setRenderTarget(wormholeRenderTarget);
     // renderer.render(scene, camera);
 
     // TODO decommit
-    tunnel.visible = false;
+    innerRing.visible = false;
     cubecam.update(renderer, scene);
-    tunnel.visible = true;
+    innerRing.visible = true;
 
     // TODO non-cubemap inner
     // renderer.setRenderTarget(tunnelRenderTarget);
     // renderer.render(scene, tunnelCamera);
 
-    scene.add(worm);
-    scene.add(tunnel); // TODO decommit
+    scene.add(outerRing);
+    scene.add(innerRing); // TODO decommit
     // renderer.setRenderTarget(null);
     renderer.render(scene, camera);
 }
