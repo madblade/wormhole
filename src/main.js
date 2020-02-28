@@ -53,7 +53,6 @@ let wormholeRadius;
 let wormholeEntry;
 let wormholeExit;
 
-// TODO latency 1frame bug
 // TODO teleport
 // TODO control widget
 // TODO another camera must render
@@ -87,7 +86,7 @@ function init() {
     let height = window.innerHeight * antialiasFactor;
 
     wormholeEntry = new Vector3(0, 40, 0);
-    wormholeExit = new Vector3(0, 50, -200);
+    wormholeExit = new Vector3(0, 50, -150);
     wormholeRadius = 20;
 
     // Outer ring

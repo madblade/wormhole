@@ -33,8 +33,9 @@ varying vec2 vUv;
 
 varying vec3 vNormal;
 varying vec3 vWorldPosition;
+uniform float radius;
 
-vec3 inverseTransformDirection( in vec3 dir, in mat4 matrix ) {
+vec3 inverseTransformDirection(in vec3 dir, in mat4 matrix) {
     // dir can be either a direction vector or a normal vector
     // upper-left 3x3 of matrix is assumed to be orthogonal
     return normalize((vec4(dir, 0.0) * matrix).xyz);
@@ -57,8 +58,8 @@ void main() {
     // difference to center
     vec2 dtc = normalize(vUv - vec2(0.5));
 
-    // distance to center normalized to diameter
-    float d = distance(vec3(0.0), v_position.xyz) / 20.0;
+    // distance to center normalized to radius
+    float d = distance(vec3(0.0), v_position.xyz) / radius;
     float fac = 1.2;
     float fr = 1.0 / fac;
     bool small = d < fr;
@@ -84,16 +85,19 @@ let InnerCubeMap = function(
     windowWidth, windowHeight,
     innerRadius, entry, exit)
 {
+    this.innerRadius = innerRadius;
+
     this.cubeCam = new CubeCamera(0.1, 1024, 2048);
     this.cubeCam.renderTarget.texture.minFilter = LinearMipMapLinearFilter;
     this.cubeCam.renderTarget.texture.generateMipmaps = true;
 
-    this.geometry = new CircleGeometry(innerRadius, 128);
+    this.geometry = new CircleGeometry(this.innerRadius, 128);
 
     this.material = new ShaderMaterial({
         side: FrontSide,
         uniforms: {
-            env: { type:'t', value: this.cubeCam.renderTarget.texture }
+            radius: { type: 'f', value: this.innerRadius },
+            env: { type: 't', value: this.cubeCam.renderTarget.texture }
         },
         vertexShader: InnerCubeMapVS,
         fragmentShader: InnerCubeMapFS,

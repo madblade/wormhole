@@ -27,11 +27,16 @@ varying vec4 cent_frag;
 varying vec3 v_position;
 varying vec3 v_center;
 varying vec2 vUv;
+uniform float innerRadius;
+uniform float outerRadius;
 
 void main() {
    float initialDistance = distance(v_center, v_position.xyz);
-   float d2 = (initialDistance - 30.0) / 10.0;
-   vec2 pxy = pos_frag.xy - (1.0 - d2) * (pos_frag.xy - cent_frag.xy);
+   float d2 = (initialDistance - innerRadius) / (outerRadius - innerRadius);
+   float factor = 1.0 - d2;
+   factor = pow(factor, 2.0);
+
+   vec2 pxy = pos_frag.xy + (cent_frag.xy - pos_frag.xy) * factor * 2.0;
    float pw = pos_frag.w;
    vec2 correctedUv = (vec2(pxy / pw) + vec2(1.0)) * 0.5;
    gl_FragColor = texture2D(texture1, correctedUv);
@@ -43,6 +48,9 @@ let OuterReversedStretch = function(
     innerRadius, outerRadius,
     origin, cameraWrapper)
 {
+    this.innerRadius = innerRadius;
+    this.outerRadius = outerRadius;
+
     let cam = cameraWrapper.getRecorder();
     this.camera = new PerspectiveCamera(cam.fov, cam.aspect, cam.near, cam.far);
 
@@ -56,12 +64,14 @@ let OuterReversedStretch = function(
     );
 
     this.geometry = new RingBufferGeometry(
-        innerRadius, outerRadius,
+        this.innerRadius, this.outerRadius,
         30, 5);
 
     this.material = new ShaderMaterial({
         side: DoubleSide,
         uniforms: {
+            innerRadius: { type: 'f', value: this.innerRadius },
+            outerRadius: { type: 'f', value: this.outerRadius },
             texture1: { type:'t', value: this.renderTarget.texture }
         },
         vertexShader: OuterReversedStretchVS,
