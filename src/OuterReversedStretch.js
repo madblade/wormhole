@@ -34,7 +34,7 @@ void main() {
    float initialDistance = distance(v_center, v_position.xyz);
    float d2 = (initialDistance - innerRadius) / (outerRadius - innerRadius);
    float factor = 1.0 - d2;
-   factor = pow(factor, 2.0);
+   factor = pow(factor, 2.0); // change power factor for influence zone
 
    vec2 pxy = pos_frag.xy + (cent_frag.xy - pos_frag.xy) * factor * 2.0;
    float pw = pos_frag.w;

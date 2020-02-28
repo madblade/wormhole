@@ -1,6 +1,6 @@
 import {
     BackSide, CircleGeometry, CubeCamera, DoubleSide, FrontSide, IcosahedronGeometry,
-    LinearMipMapLinearFilter, Mesh, NearestFilter, Object3D, RGBFormat,
+    LinearMipMapLinearFilter, Mesh, NearestFilter, NearestMipmapLinearFilter, NearestMipmapNearestFilter, Object3D, PlaneGeometry, RGBFormat,
     RingBufferGeometry, ShaderMaterial, SphereGeometry, WebGLRenderTarget
 } from 'three';
 
@@ -87,11 +87,17 @@ let InnerCubeMap = function(
 {
     this.innerRadius = innerRadius;
 
-    this.cubeCam = new CubeCamera(0.1, 1024, 2048);
+    // TODO expose settings
+    this.resolution = 2048;
+    this.anisotropy = 4;
+
+    this.cubeCam = new CubeCamera(0.01, 1024, this.resolution);
+    this.cubeCam.renderTarget.texture.anisotropy = this.anisotropy;
     this.cubeCam.renderTarget.texture.minFilter = LinearMipMapLinearFilter;
     this.cubeCam.renderTarget.texture.generateMipmaps = true;
 
-    this.geometry = new CircleGeometry(this.innerRadius, 128);
+    this.geometry = new CircleGeometry(this.innerRadius, 64);
+    // this.geometry = new IcosahedronGeometry(this.innerRadius, 3);
 
     this.material = new ShaderMaterial({
         side: FrontSide,
