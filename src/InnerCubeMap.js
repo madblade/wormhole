@@ -1,7 +1,9 @@
 import {
-    BackSide, CircleGeometry, CubeCamera, DoubleSide, FrontSide, IcosahedronGeometry,
-    LinearMipMapLinearFilter, Mesh, NearestFilter, NearestMipmapLinearFilter, NearestMipmapNearestFilter, Object3D, PlaneGeometry, RGBFormat,
-    RingBufferGeometry, ShaderMaterial, SphereGeometry, WebGLRenderTarget
+    CircleGeometry, CubeCamera,
+    FrontSide,
+    LinearMipMapLinearFilter, Mesh,
+    Object3D,
+    ShaderMaterial
 } from 'three';
 
 const InnerCubeMapVS = `
@@ -14,15 +16,15 @@ varying vec3 vNormal;
 varying vec3 vWorldPosition;
 
 void main() {
-   vUv = uv;
-   vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+    vUv = uv;
+    vec4 worldPosition = modelMatrix * vec4(position, 1.0);
 
-   vNormal = normalize(normalMatrix * normal);
-   vWorldPosition = worldPosition.xyz;
+    vNormal = normalize(normalMatrix * normal);
+    vWorldPosition = worldPosition.xyz;
 
-   v_position = worldPosition.xyz - modelMatrix[3].xyz;
-   pos_frag = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
-   gl_Position = pos_frag;
+    v_position = worldPosition.xyz - modelMatrix[3].xyz;
+    pos_frag = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+    gl_Position = pos_frag;
 }`;
 
 const InnerCubeMapFS = `
@@ -61,6 +63,7 @@ void main() {
     // distance to center normalized to radius
     float d = distance(vec3(0.0), v_position.xyz) / radius;
     float fac = 1.2;
+        // TODO expose fac for stretch factor (1.0, 1.2, 2)
     float fr = 1.0 / fac;
     bool small = d < fr;
     float left = 1.0 / fr; float right = 1.0 / (1.0 - fr);
@@ -73,6 +76,7 @@ void main() {
 
     float halfSphere = (small ? 1.0 : -1.0) * sqrt(1.0 - x2 - y2);
     vec3 proj = vec3(f, halfSphere);
+        // TODO 1.0 for rectilinear mapping, half-sphere for spherical mapping
 
     // distance to middle mapped to half-sphere
     reflectVec = normalize(proj);
@@ -97,7 +101,6 @@ let InnerCubeMap = function(
     this.cubeCam.renderTarget.texture.generateMipmaps = true;
 
     this.geometry = new CircleGeometry(this.innerRadius, 64);
-    // this.geometry = new IcosahedronGeometry(this.innerRadius, 3);
 
     this.material = new ShaderMaterial({
         side: FrontSide,
@@ -125,6 +128,19 @@ let InnerCubeMap = function(
     this.pitch.add(this.cubeCam);
     this.yaw.add(this.pitch);
     this.wrapper.add(this.yaw);
+};
+
+InnerCubeMap.prototype.getScale = function()
+{
+    return this.mesh.scale.x;
+};
+
+InnerCubeMap.prototype.setScale = function(scale)
+{
+    let newRadius = this.innerRadius * scale;
+    this.material.uniforms.radius.value = newRadius;
+    this.mesh.scale.set(scale, scale, 1);
+    this.material.uniformsNeedUpdate = true;
 };
 
 InnerCubeMap.prototype.setXRotation = function(x)

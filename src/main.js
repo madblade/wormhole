@@ -53,9 +53,7 @@ let wormholeRadius;
 let wormholeEntry;
 let wormholeExit;
 
-// TODO teleport
 // TODO control widget
-// TODO another camera must render
 
 init();
 animate();
@@ -162,6 +160,7 @@ function animate() {
     let newDistance = newPosition.distanceTo(wormholeEntry);
     // Intersect with wormhole horizon
     if (oldDistance > wormholeRadius && newDistance < wormholeRadius) {
+        // TODO rotate on teleport
         // Teleport to other wormhole end
         // console.log(`${oldDistance} -> ${newDistance} [${wormholeRadius}]`);
         newPosition.set(
@@ -205,6 +204,8 @@ function animate() {
     effectComposer.render();
     // Render inner circle with cube map
     icm.getCubeCam().update(renderer, scene);
+    // oss.setScale(oss.getScale() + 0.001);
+    // icm.setScale(icm.getScale() + 0.001);
 
     // Add drawable objects
     innerCircle.visible = true;

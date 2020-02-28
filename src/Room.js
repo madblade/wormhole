@@ -1,4 +1,6 @@
-import {DoubleSide, Group, Mesh, MeshPhongMaterial, PlaneBufferGeometry, PointLight} from 'three';
+import {
+    Group, Mesh, MeshPhongMaterial, PlaneBufferGeometry, PointLight
+} from 'three';
 
 let Room = function(
     colorWall1, colorWall2, colorWall3, colorFloor)
