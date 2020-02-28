@@ -5,15 +5,14 @@ import {
     Scene, Vector3,
     WebGLRenderer
 } from 'three';
-import {Room} from './Room';
-import {EffectComposer} from 'three/examples/jsm/postprocessing/EffectComposer';
-import {RenderPass} from 'three/examples/jsm/postprocessing/RenderPass';
-import {ShaderPass} from 'three/examples/jsm/postprocessing/ShaderPass';
-import {FXAAShader} from 'three/examples/jsm/shaders/FXAAShader';
-import {OuterSimpleStretch} from './OuterSimpleStretch';
-import {addCubeWall, addListeners, getHalfSphere, getSmallSphere, newComposer} from './factory';
-import {InnerCubeMap} from './InnerCubeMap';
-import {CameraWrapper} from './CameraWrapper';
+import { Room } from './Room';
+import { OuterSimpleStretch } from './OuterSimpleStretch';
+import {
+    addCubeWall, addListeners, getHalfSphere, getSmallSphere, newComposer
+} from './factory';
+import { InnerCubeMap } from './InnerCubeMap';
+import { CameraWrapper } from './CameraWrapper';
+import {OuterReversedStretch} from './OuterReversedStretch';
 
 // Depth buffer interesting articles
 // https://threejs.org/examples/webgl_depth_texture.html
@@ -91,12 +90,14 @@ function init() {
     wormholeRadius = 20;
 
     // Outer ring
-    oss = new OuterSimpleStretch(width, height, wormholeRadius, 2 * wormholeRadius,
+    oss = new OuterReversedStretch(width, height,
+        wormholeRadius, 2 * wormholeRadius,
         wormholeEntry
     );
 
     // Inner ring
-    icm = new InnerCubeMap(width, height, wormholeRadius,
+    icm = new InnerCubeMap(width, height,
+        wormholeRadius,
         wormholeEntry,
         wormholeExit
     );
@@ -131,14 +132,9 @@ function init() {
     );
 }
 
-// TODO 1. log camera distance to blackhole object
-// put a cube in front of the camera
-// 2. put ring near camera
+// 1. log camera distance to blackhole object
 // 3. adjust ring outer size
-// 4. integrate displacement
 // 5. adjust ring inner size
-// 6. disable inner circle depth testing
-// 7. use envmap in inner circle
 // On top of setting object.renderOrder you have to set
 // material.depthTest to false on the relevant objects.
 
@@ -167,7 +163,7 @@ function animate() {
     // Intersect with wormhole horizon
     if (oldDistance > wormholeRadius && newDistance < wormholeRadius) {
         // Teleport to other wormhole end
-        console.log(`${oldDistance} -> ${newDistance} [${wormholeRadius}]`);
+        // console.log(`${oldDistance} -> ${newDistance} [${wormholeRadius}]`);
         newPosition.set(
             newPosition.x + wormholeExit.x - wormholeEntry.x,
             newPosition.y + wormholeExit.y - wormholeEntry.y,
@@ -189,7 +185,9 @@ function animate() {
     let exit = icm.getExit();
     let entry = icm.getEntry();
     let to = new Vector3(
-        exit.x - p.x + entry.x, exit.y - p.y + entry.y, exit.z - p.z + entry.z
+        exit.x - p.x + entry.x,
+        exit.y - p.y + entry.y,
+        exit.z - p.z + entry.z
     );
     let cc = icm.getCubeCam();
     cc.lookAt(to);

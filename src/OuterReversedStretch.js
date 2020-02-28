@@ -2,6 +2,7 @@ import {
     DoubleSide, LinearFilter, Mesh, NearestFilter, RGBFormat,
     RingBufferGeometry, ShaderMaterial, WebGLRenderTarget
 } from 'three';
+import {OuterSimpleStretch} from './OuterSimpleStretch';
 
 const OuterReversedStretchVS = `
 varying vec4 pos_frag;
@@ -23,7 +24,7 @@ varying vec2 vUv;
 
 void main() {
    float initialDistance = distance(vec3(0.0), v_position.xyz);
-   float d2 = (initialDistance - 30.0) / 10;
+   float d2 = (initialDistance - 25.0) / 15.0;
    vec2 pxy = pos_frag.xy;
    float pw = pos_frag.w;
    vec2 correctedUv = (vec2(d2 * pxy / pw) + vec2(1.0)) * 0.5;
@@ -33,7 +34,8 @@ void main() {
 
 let OuterReversedStretch = function(
     windowWidth, windowHeight,
-    innerRadius, outerRadius)
+    innerRadius, outerRadius,
+    origin)
 {
     this.renderTarget = new WebGLRenderTarget(
         windowWidth, windowHeight,
@@ -59,7 +61,14 @@ let OuterReversedStretch = function(
         // renderOrder: 9999
     });
 
+    this.origin = origin;
     this.mesh = new Mesh(this.geometry, this.material);
+    this.mesh.position.set(origin.x, origin.y, origin.z);
+};
+
+OuterSimpleStretch.prototype.getOrigin = function()
+{
+    return this.origin;
 };
 
 OuterReversedStretch.prototype.getMesh = function()

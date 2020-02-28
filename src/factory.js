@@ -118,19 +118,16 @@ function addListeners(
         let relX = event.movementX || event.mozMovementX || event.webkitMovementX || 0;
         let relY = event.movementY || event.mozMovementY || event.webkitMovementY || 0;
         // rotate main camera
+        // TODO rotate only in animate
         camera.rotateZ(-relX * 0.002);
         camera.rotateX(-relY * 0.002);
-        // rotate cube camera
-        // TODO rotate only in animate
-        // icm.setZRotation(camera.getZRotation());
-        // icm.setXRotation(camera.getXRotation());
     });
 
-    document.addEventListener('mousedown', event => {
+    document.addEventListener('mousedown', () => {
         state.mouseDown = true;
     });
 
-    document.addEventListener('mouseup', event => {
+    document.addEventListener('mouseup', () => {
         state.mouseDown = false;
     });
 }

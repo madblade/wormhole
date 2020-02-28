@@ -1,7 +1,7 @@
 import {
-    BackSide, CircleGeometry, CubeCamera, DoubleSide, FrontSide,
+    BackSide, CircleGeometry, CubeCamera, DoubleSide, FrontSide, IcosahedronGeometry,
     LinearMipMapLinearFilter, Mesh, NearestFilter, Object3D, RGBFormat,
-    RingBufferGeometry, ShaderMaterial, WebGLRenderTarget
+    RingBufferGeometry, ShaderMaterial, SphereGeometry, WebGLRenderTarget
 } from 'three';
 
 const InnerCubeMapVS = `
