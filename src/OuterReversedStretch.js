@@ -1,33 +1,39 @@
 import {
-    DoubleSide, LinearFilter, Mesh, NearestFilter, RGBFormat,
+    DoubleSide, LinearFilter, Mesh, NearestFilter, PerspectiveCamera, RGBFormat,
     RingBufferGeometry, ShaderMaterial, WebGLRenderTarget
 } from 'three';
-import {OuterSimpleStretch} from './OuterSimpleStretch';
 
 const OuterReversedStretchVS = `
 varying vec4 pos_frag;
+varying vec4 cent_frag;
 varying vec3 v_position;
+varying vec3 v_center;
 attribute vec2 vertex2D;
 varying vec2 vUv;
 void main() {
    vUv = uv;
    v_position = (modelMatrix * vec4(position, 1.0)).xyz - modelMatrix[3].xyz;
-   pos_frag = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+   v_center = (modelMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz - modelMatrix[3].xyz;
+   mat4 pmv = projectionMatrix * modelViewMatrix;
+   pos_frag = pmv * vec4(position, 1.0);
+   cent_frag = pmv * vec4(vec3(0.0), 1.0);
    gl_Position = pos_frag;
 }`;
 
 const OuterReversedStretchFS = `
 uniform sampler2D texture1;
 varying vec4 pos_frag;
+varying vec4 cent_frag;
 varying vec3 v_position;
+varying vec3 v_center;
 varying vec2 vUv;
 
 void main() {
-   float initialDistance = distance(vec3(0.0), v_position.xyz);
-   float d2 = (initialDistance - 25.0) / 15.0;
-   vec2 pxy = pos_frag.xy;
+   float initialDistance = distance(v_center, v_position.xyz);
+   float d2 = (initialDistance - 30.0) / 10.0;
+   vec2 pxy = pos_frag.xy - (1.0 - d2) * (pos_frag.xy - cent_frag.xy);
    float pw = pos_frag.w;
-   vec2 correctedUv = (vec2(d2 * pxy / pw) + vec2(1.0)) * 0.5;
+   vec2 correctedUv = (vec2(pxy / pw) + vec2(1.0)) * 0.5;
    gl_FragColor = texture2D(texture1, correctedUv);
 }`;
 
@@ -35,8 +41,11 @@ void main() {
 let OuterReversedStretch = function(
     windowWidth, windowHeight,
     innerRadius, outerRadius,
-    origin)
+    origin, cameraWrapper)
 {
+    let cam = cameraWrapper.getRecorder();
+    this.camera = new PerspectiveCamera(cam.fov, cam.aspect, cam.near, cam.far);
+
     this.renderTarget = new WebGLRenderTarget(
         windowWidth, windowHeight,
         {
@@ -66,7 +75,12 @@ let OuterReversedStretch = function(
     this.mesh.position.set(origin.x, origin.y, origin.z);
 };
 
-OuterSimpleStretch.prototype.getOrigin = function()
+OuterReversedStretch.prototype.getCamera = function()
+{
+    return this.camera;
+};
+
+OuterReversedStretch.prototype.getOrigin = function()
 {
     return this.origin;
 };

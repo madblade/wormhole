@@ -6,7 +6,6 @@ import {
     WebGLRenderer
 } from 'three';
 import { Room } from './Room';
-import { OuterSimpleStretch } from './OuterSimpleStretch';
 import {
     addCubeWall, addListeners, getHalfSphere, getSmallSphere, newComposer
 } from './factory';
@@ -54,8 +53,10 @@ let wormholeRadius;
 let wormholeEntry;
 let wormholeExit;
 
+// TODO latency 1frame bug
 // TODO teleport
 // TODO control widget
+// TODO another camera must render
 
 init();
 animate();
@@ -92,7 +93,7 @@ function init() {
     // Outer ring
     oss = new OuterReversedStretch(width, height,
         wormholeRadius, 2 * wormholeRadius,
-        wormholeEntry
+        wormholeEntry, cameraWrapper
     );
 
     // Inner ring
@@ -172,6 +173,9 @@ function animate() {
     }
     cameraWrapper.setCameraPosition(newPosition.x, newPosition.y, newPosition.z);
 
+    let outerCamera = oss.getCamera();
+    outerCamera.position.set(newPosition.x, newPosition.y, newPosition.z);
+
     // Update drawable orientation
     let innerCircle = icm.getMesh();
     let outerRing = oss.getMesh();
@@ -198,6 +202,7 @@ function animate() {
     innerCircle.visible = false;
 
     // Render outer ring with fxaa
+    effectComposer.render();
     effectComposer.render();
     // Render inner circle with cube map
     icm.getCubeCam().update(renderer, scene);
