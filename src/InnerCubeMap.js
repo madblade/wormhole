@@ -84,7 +84,7 @@ let InnerCubeMap = function(
     windowWidth, windowHeight,
     innerRadius, entry, exit)
 {
-    this.cubeCam = new CubeCamera(0.1, 1024, 1024);
+    this.cubeCam = new CubeCamera(0.1, 1024, 2048);
     this.cubeCam.renderTarget.texture.minFilter = LinearMipMapLinearFilter;
     this.cubeCam.renderTarget.texture.generateMipmaps = true;
 

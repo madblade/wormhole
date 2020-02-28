@@ -51,7 +51,11 @@ let halfSphere;
 let smallSphere;
 let effectComposer;
 
-// TODO controls
+let wormholeRadius;
+let wormholeEntry;
+let wormholeExit;
+
+// TODO teleport
 // TODO control widget
 
 init();
@@ -82,24 +86,20 @@ function init() {
     let width = window.innerWidth * antialiasFactor;
     let height = window.innerHeight * antialiasFactor;
 
-    let wormholeEntry = new Vector3(0, 40, 0);
-    let wormholeExit = new Vector3(0, 50, -200);
+    wormholeEntry = new Vector3(0, 40, 0);
+    wormholeExit = new Vector3(0, 50, -200);
+    wormholeRadius = 20;
 
     // Outer ring
-    oss = new OuterSimpleStretch(width, height, 20, 40,
+    oss = new OuterSimpleStretch(width, height, wormholeRadius, 2 * wormholeRadius,
         wormholeEntry
     );
 
     // Inner ring
-    icm = new InnerCubeMap(width, height, 20,
+    icm = new InnerCubeMap(width, height, wormholeRadius,
         wormholeEntry,
         wormholeExit
     );
-
-    // tunnel camera
-    // tunnelCamera = new PerspectiveCamera(120, ASPECT, 1, 1000000);
-    // tunnelCamera = new CubeCamera(1, 100000, 2);
-    // cubeCam = icm.getCubeCam();
 
     // Rotate cube camera
     icm.setUpRotation(-Math.PI / 2, Math.PI, 0);
@@ -145,7 +145,7 @@ function init() {
 function animate() {
     requestAnimationFrame(animate);
 
-    // update objects
+    // Update objects
     let timer = Date.now() * 0.01;
     smallSphere.position.set(
         Math.cos(timer * 0.1) * 30,
@@ -155,22 +155,33 @@ function animate() {
     smallSphere.rotation.y =  Math.PI / 2  - timer * 0.1;
     smallSphere.rotation.z = timer * 0.8;
 
-    // update camera
+    // Update camera position
     let p = cameraWrapper.getCameraPosition();
     let fw = cameraWrapper.getForwardVector([
         state.forwardDown, state.backDown, state.rightDown, state.leftDown,
         state.upDown, state.downDown
     ], false);
-    cameraWrapper.setCameraPosition(
-        p.x + fw[0], p.y + fw[1], p.z + fw[2]
-    );
+    let newPosition = new Vector3(p.x + fw[0], p.y + fw[1], p.z + fw[2]);
+    let oldDistance = p.distanceTo(wormholeEntry);
+    let newDistance = newPosition.distanceTo(wormholeEntry);
+    // Intersect with wormhole horizon
+    if (oldDistance > wormholeRadius && newDistance < wormholeRadius) {
+        // Teleport to other wormhole end
+        console.log(`${oldDistance} -> ${newDistance} [${wormholeRadius}]`);
+        newPosition.set(
+            newPosition.x + wormholeExit.x - wormholeEntry.x,
+            newPosition.y + wormholeExit.y - wormholeEntry.y,
+            newPosition.z + wormholeExit.z - wormholeEntry.z,
+        );
+    }
+    cameraWrapper.setCameraPosition(newPosition.x, newPosition.y, newPosition.z);
+
+    // Update drawable orientation
     let innerCircle = icm.getMesh();
     let outerRing = oss.getMesh();
-
     let rec = cameraWrapper.getRecorder();
     let q = new Quaternion();
     rec.getWorldQuaternion(q);
-
     innerCircle.setRotationFromQuaternion(q); // reset up vector
     outerRing.setRotationFromQuaternion(q); // ditto
     innerCircle.lookAt(cameraWrapper.getCameraPosition());
@@ -183,23 +194,21 @@ function animate() {
     let cc = icm.getCubeCam();
     cc.lookAt(to);
 
-    // let mainRenderTarget = renderer.getRenderTarget();
+    // Remove drawable objects
     scene.remove(outerRing);
     scene.remove(innerCircle);
-
-    effectComposer.render();
-    // renderer.setRenderTarget(wormholeRenderTarget);
-    // renderer.render(scene, camera);
-
     innerCircle.visible = false;
+
+    // Render outer ring with fxaa
+    effectComposer.render();
+    // Render inner circle with cube map
     icm.getCubeCam().update(renderer, scene);
+
+    // Add drawable objects
     innerCircle.visible = true;
-
-    // TODO non-cubemap inner
-    // renderer.setRenderTarget(tunnelRenderTarget);
-    // renderer.render(scene, tunnelCamera);
-
     scene.add(outerRing);
     scene.add(innerCircle);
+
+    // Render full scene
     renderer.render(scene, camera);
 }
