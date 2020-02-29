@@ -83,9 +83,9 @@ function addListeners(
                 state.leftDown = true; break;
             case 79: // right
                 state.rightDown = true; break;
-            case 16:
+            case 50:
                 state.downDown = true; break;
-            case 32:
+            case 52:
                 state.upDown = true; break;
             // right hand
             // case 71: // fwd
@@ -106,9 +106,9 @@ function addListeners(
                 state.leftDown = false; break;
             case 79: // right
                 state.rightDown = false; break;
-            case 16:
+            case 50:
                 state.downDown = false; break;
-            case 32:
+            case 52:
                 state.upDown = false; break;
             default: break;
         }

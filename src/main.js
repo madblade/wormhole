@@ -159,6 +159,13 @@ function animate() {
     let oldDistance = p.distanceTo(wormholeEntry);
     let newPosition = new Vector3(p.x + fw[0], p.y + fw[1], p.z + fw[2]);
     let newDistance = newPosition.distanceTo(wormholeEntry);
+
+    let exit = icm.getExit();
+    let entry = icm.getEntry();
+    let innerCircle = icm.getMesh();
+    let outerRing = oss.getMesh();
+    let rec = cameraWrapper.getRecorder();
+
     // Intersect with wormhole horizon
     if (oldDistance > wormholeRadius && newDistance < wormholeRadius) {
         // TODO rotate on teleport
@@ -176,24 +183,19 @@ function animate() {
     outerCamera.position.set(newPosition.x, newPosition.y, newPosition.z);
 
     // Update drawable orientation
-    let innerCircle = icm.getMesh();
-    let outerRing = oss.getMesh();
-    let rec = cameraWrapper.getRecorder();
     let q = new Quaternion();
     rec.getWorldQuaternion(q);
     innerCircle.setRotationFromQuaternion(q); // reset up vector
     outerRing.setRotationFromQuaternion(q); // ditto
-    innerCircle.lookAt(cameraWrapper.getCameraPosition());
-    outerRing.lookAt(cameraWrapper.getCameraPosition());
-    let exit = icm.getExit();
-    let entry = icm.getEntry();
+    innerCircle.lookAt(newPosition);
+    outerRing.lookAt(newPosition);
     let to = new Vector3(
         exit.x - (entry.x - p.x),
         exit.y - (entry.y - p.y),
         exit.z + (entry.z - p.z)
     );
     let cc = icm.getCubeCam();
-    cc.lookAt(new Vector3(to.x, to.y, to.z));
+    cc.lookAt(to);
 
     // Remove drawable objects
     scene.remove(outerRing);

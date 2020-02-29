@@ -62,20 +62,22 @@ void main() {
 
     // distance to center normalized to radius
     float d = distance(vec3(0.0), v_position.xyz) / radius;
-    float fac = 1.0;
-        // TODO expose fac for stretch factor (1.0, 1.2, 2)
-    float fr = 1.0 / fac;
-    bool small = d < fr;
-    float left = 1.0 / fr; float right = 1.0 / (1.0 - fr);
 
-    vec2 f = small ? left * d * dtc : right * (1.0 - d) * dtc;
-    float x = f.x; float y = f.y;
+    // float fac = 1.0;
+    // float fr = 1.0 / fac;
+    // bool small = d < fr;
+    // float left = 1.0 / fr; float right = 1.0 / (1.0 - fr);
+    // vec2 f = small ? left * d * dtc : right * (1.0 - d) * dtc;
+    // float x = f.x; float y = f.y;
+    // float x2 = small ? x * x : pow(x, 2.0);
+    // float y2 = small ? y * y : pow(y, 2.0);
+    // float halfSphere = (small ? 1.0 : -1.0) * sqrt(1.0 - x2 - y2);
+    // vec3 proj = vec3(f, halfSphere);
 
-    float x2 = small ? x * x : pow(x, 2.0);
-    float y2 = small ? y * y : pow(y, 2.0);
-
-    float halfSphere = (small ? 1.0 : -1.0) * sqrt(1.0 - x2 - y2);
-    vec3 proj = vec3(f, halfSphere);
+    float pp = 2.0;
+    float b = pow(d, pp);
+    float c = 0.5 - tan(b * 1.54); // b * pi / 2
+    vec3 proj = vec3(d * dtc, c);
         // TODO 1.0 for rectilinear mapping, half-sphere for spherical mapping
 
     // distance to middle mapped to half-sphere
