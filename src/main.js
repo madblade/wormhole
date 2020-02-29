@@ -57,7 +57,8 @@ let wormholeExit;
 // TODO 2. refactor camera wrapper to use quaternions
 // TODO 3. camera teleport position
 // TODO 4. camera teleport orientation
-// TODO 5. study transition smoothness
+// TODO 5. curve trajectory between 2r and .75r
+// TODO 6. study transition smoothness
 // TODO control widget for mobile
 
 init();
