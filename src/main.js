@@ -53,7 +53,12 @@ let wormholeRadius;
 let wormholeEntry;
 let wormholeExit;
 
-// TODO control widget
+// TODO 1. separate scenes
+// TODO 2. refactor camera wrapper to use quaternions
+// TODO 3. camera teleport position
+// TODO 4. camera teleport orientation
+// TODO 5. study transition smoothness
+// TODO control widget for mobile
 
 init();
 animate();
@@ -167,8 +172,8 @@ function animate() {
     let rec = cameraWrapper.getRecorder();
 
     // Intersect with wormhole horizon
-    if (oldDistance > wormholeRadius && newDistance < wormholeRadius) {
-        // TODO rotate on teleport
+    if (oldDistance > wormholeRadius * 0.75 && newDistance < wormholeRadius * 0.75) {
+        // TODO slightly curve trajectory when crossing
         // Teleport to other wormhole end
         // console.log(`${oldDistance} -> ${newDistance} [${wormholeRadius}]`);
         newPosition.set(
@@ -195,6 +200,7 @@ function animate() {
         exit.z + (entry.z - p.z)
     );
     let cc = icm.getCubeCam();
+    cc.setRotationFromQuaternion(q);
     cc.lookAt(to);
 
     // Remove drawable objects

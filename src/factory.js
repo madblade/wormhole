@@ -73,46 +73,100 @@ function addListeners(
     camera, icm,
     halfSphere, state
 ) {
+    const azerty = {
+        FORWARD: 90, // z
+        BACKWARD: 83, // s
+        LEFT: 81, // q
+        RIGHT: 68, // d
+        DOWN: 16, // shift
+        UP: 32 // space
+    };
+    const qwerty = {
+        FORWARD: 87, // w
+        BACKWARD: 83, // s
+        LEFT: 65, // a
+        RIGHT: 68, // d
+        DOWN: 16, // shift
+        UP: 32 // space
+    };
+    const arrows = {
+        FORWARD: 38, // up
+        BACKWARD: 40, // down
+        LEFT: 37, // left
+        RIGHT: 39, // right
+        DOWN: 16, // shift
+        UP: 32 // space
+    };
+    const bepo = {
+        FORWARD: 51, // »
+        BACKWARD: 80, // p
+        LEFT: 186, // é
+        RIGHT: 79, // o
+        DOWN: 50, // «
+        UP: 52  // (
+    };
+
     document.addEventListener('keydown', event => {
         switch (event.keyCode) {
-            case 51: // fwd
+            case azerty.FORWARD: case qwerty.FORWARD:
+            case arrows.FORWARD: case bepo.FORWARD:
                 state.forwardDown = true; break;
-            case 80: // bwd
+            case azerty.BACKWARD: case qwerty.BACKWARD:
+            case arrows.BACKWARD: case bepo.BACKWARD:
                 state.backDown = true; break;
-            case 186: // left
+            case azerty.LEFT: case qwerty.LEFT:
+            case arrows.LEFT: case bepo.LEFT:
                 state.leftDown = true; break;
-            case 79: // right
+            case azerty.RIGHT: case qwerty.RIGHT:
+            case arrows.RIGHT: case bepo.RIGHT:
                 state.rightDown = true; break;
-            case 50:
+            case azerty.DOWN: case qwerty.DOWN:
+            case arrows.DOWN: case bepo.DOWN:
                 state.downDown = true; break;
-            case 52:
+            case azerty.UP: case qwerty.UP:
+            case arrows.UP: case bepo.UP:
                 state.upDown = true; break;
-            // right hand
-            // case 71: // fwd
-            // case 40: // bwd
-            // case 38: // left
-            // case 90: // right
             default: break;
         }
     });
 
     document.addEventListener('keyup', event => {
         switch (event.keyCode) {
-            case 51: // fwd
+            case azerty.FORWARD: case qwerty.FORWARD:
+            case arrows.FORWARD: case bepo.FORWARD:
                 state.forwardDown = false; break;
-            case 80: // bwd
+            case azerty.BACKWARD: case qwerty.BACKWARD:
+            case arrows.BACKWARD: case bepo.BACKWARD:
                 state.backDown = false; break;
-            case 186: // left
+            case azerty.LEFT: case qwerty.LEFT:
+            case arrows.LEFT: case bepo.LEFT:
                 state.leftDown = false; break;
-            case 79: // right
+            case azerty.RIGHT: case qwerty.RIGHT:
+            case arrows.RIGHT: case bepo.RIGHT:
                 state.rightDown = false; break;
-            case 50:
+            case azerty.DOWN: case qwerty.DOWN:
+            case arrows.DOWN: case bepo.DOWN:
                 state.downDown = false; break;
-            case 52:
+            case azerty.UP: case qwerty.UP:
+            case arrows.UP: case bepo.UP:
                 state.upDown = false; break;
             default: break;
         }
     });
+
+    let resetState = () => {
+        // state.mouseDown = false;
+        state.forwardDown = false;
+        state.leftDown = false;
+        state.rightDown = false;
+        state.backDown = false;
+        state.downDown = false;
+        state.upDown = false;
+    };
+
+    document.addEventListener('focusout', resetState);
+    document.addEventListener('visibilitychange', resetState);
+    document.addEventListener('mouseout', resetState);
 
     document.addEventListener('mousemove', event => {
         if (!state.mouseDown) return;

@@ -35,7 +35,7 @@ void main() {
     float d2 = (initialDistance - innerRadius) / (outerRadius - innerRadius);
     float factor = 1.0 - d2;
     factor = pow(factor, 2.0);
-        // TODO expose power factor for influence zone
+        // TODO this power factor can be exposed
 
     vec2 pxy = pos_frag.xy + (cent_frag.xy - pos_frag.xy) * factor * 2.0;
     float pw = pos_frag.w;
