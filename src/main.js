@@ -118,6 +118,7 @@ function init() {
 
     let room = new Room(0x7f7fff, 0x00ff00, 0xff0000, 0xffffff);
     let roomMesh = room.getMesh();
+    // roomMesh.scale.set(2, 2, 2);
     scene.add(roomMesh);
 
     // Cube tunnel
@@ -155,8 +156,8 @@ function animate() {
         state.forwardDown, state.backDown, state.rightDown, state.leftDown,
         state.upDown, state.downDown
     ], false);
-    let newPosition = new Vector3(p.x + fw[0], p.y + fw[1], p.z + fw[2]);
     let oldDistance = p.distanceTo(wormholeEntry);
+    let newPosition = new Vector3(p.x + fw[0], p.y + fw[1], p.z + fw[2]);
     let newDistance = newPosition.distanceTo(wormholeEntry);
     // Intersect with wormhole horizon
     if (oldDistance > wormholeRadius && newDistance < wormholeRadius) {
@@ -187,12 +188,12 @@ function animate() {
     let exit = icm.getExit();
     let entry = icm.getEntry();
     let to = new Vector3(
-        exit.x - p.x + entry.x,
-        exit.y - p.y + entry.y,
-        exit.z - p.z + entry.z
+        exit.x - (entry.x - p.x),
+        exit.y - (entry.y - p.y),
+        exit.z + (entry.z - p.z)
     );
     let cc = icm.getCubeCam();
-    cc.lookAt(to);
+    cc.lookAt(new Vector3(to.x, to.y, to.z));
 
     // Remove drawable objects
     scene.remove(outerRing);

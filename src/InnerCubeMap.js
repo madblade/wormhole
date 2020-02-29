@@ -62,7 +62,7 @@ void main() {
 
     // distance to center normalized to radius
     float d = distance(vec3(0.0), v_position.xyz) / radius;
-    float fac = 1.2;
+    float fac = 1.0;
         // TODO expose fac for stretch factor (1.0, 1.2, 2)
     float fr = 1.0 / fac;
     bool small = d < fr;
@@ -92,7 +92,7 @@ let InnerCubeMap = function(
     this.innerRadius = innerRadius;
 
     // TODO expose settings
-    this.resolution = 2048;
+    this.resolution = 1024;
     this.anisotropy = 4;
 
     this.cubeCam = new CubeCamera(0.01, 1024, this.resolution);

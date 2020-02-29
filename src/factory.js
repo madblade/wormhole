@@ -43,10 +43,11 @@ function addCubeWall(scene)
     cube.position.z = -230;
     cube.position.y = 25;
     scene.add(cube);
-    for (let i = -5; i < 6; ++i) {
-        for (let j = -5; j < 6; ++j) {
+    for (let i = -10; i < 10; ++i) {
+        for (let j = -10; j < 10; ++j) {
             cubeGeo = new BoxGeometry(12.5, 12.5, 12.5);
-            var cube2 = new Mesh(cubeGeo, new MeshPhongMaterial({ color: 0xff0000 }));
+            var cube2 = new Mesh(cubeGeo,
+                new MeshPhongMaterial({ color: 0xffffff * Math.random() }));
             cube2.position.z = -230;
             cube2.position.y = 25 + 25 * j;
             cube2.position.x = 25 * i;
