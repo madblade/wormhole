@@ -34,18 +34,26 @@ CameraWrapper.prototype.getUpRotation = function() {
 
 CameraWrapper.prototype.rotateX = function(deltaX) {
     this.rx += deltaX;
-    this.rx = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.rx));
+    // More convenient rotation without lock
+    if (this.rx > 3 * Math.PI / 2) this.rx -= 2 * Math.PI;
+    if (this.rx < -3 * Math.PI / 2) this.rx += 2 * Math.PI;
+    // this.rx = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.rx));
     this.updateQuaternionFromRotation();
 };
 
 CameraWrapper.prototype.rotateZ = function(deltaZ) {
-    this.ry += deltaZ;
+    if (this.rx < -Math.PI / 2 || this.rx > Math.PI / 2)
+        this.ry -= deltaZ;
+    else
+        this.ry += deltaZ;
     this.updateQuaternionFromRotation();
 };
 
 CameraWrapper.prototype.setRotationXZ = function(x, z) {
     this.rx = x;
-    this.rx = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.rx));
+    if (this.rx > 3 * Math.PI / 2) this.rx -= 2 * Math.PI;
+    if (this.rx < -3 * Math.PI / 2) this.rx += 2 * Math.PI;
+    // this.rx = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.rx));
     this.ry = z;
     this.updateQuaternionFromRotation();
 };

@@ -8,7 +8,6 @@ import {
 import { Room } from './Room';
 import {
     addCubeWall, addListeners, addWall,
-    // getHalfSphere,
     getSmallSphere, newComposer
 } from './factory';
 import { InnerCubeMap } from './InnerCubeMap';
@@ -60,10 +59,14 @@ let wormholeExit;
 let eventContainer = [];
 let currentWorld = '1';
 
-// TODO 4. camera teleport orientation
 // TODO 5. curve trajectory between 2r and .75r
+//  idea: I can force smaller steps!!
 // TODO 6. study transition smoothness
-// TODO control widget for mobile
+
+// TODO 7. control widget for mobile
+// TODO 8. blackhole scope reducer
+// On top of setting object.renderOrder you have to set
+// material.depthTest to false on the relevant objects.
 
 init();
 animate();
@@ -140,12 +143,6 @@ function init() {
     );
 }
 
-// 1. log camera distance to blackhole object
-// 3. adjust ring outer size
-// 5. adjust ring inner size
-// On top of setting object.renderOrder you have to set
-// material.depthTest to false on the relevant objects.
-
 function teleport(newPosition)
 {
     let cam = cameraWrapper.get3DObject();
@@ -217,17 +214,12 @@ function updatePlayerPosition()
 
     // Intersect with wormhole horizon
     if (oldDistance > wormholeRadius * 0.5 && newDistance < wormholeRadius * 0.5) {
-        // TODO curve trajectory when crossing
-        // Teleport to other wormhole end
         // console.log(`${oldDistance} -> ${newDistance} [${wormholeRadius}]`);
         teleport(newPosition);
-        if (currentWorld === '1') {
-            wormholeCurrentScene = icm.getEntry();
-            wormholeOtherScene = icm.getExit();
-        } else {
-            wormholeCurrentScene = icm.getExit();
-            wormholeOtherScene = icm.getEntry();
-        }
+        // Switch wormhole positions
+        let temp = wormholeCurrentScene;
+        wormholeCurrentScene = wormholeOtherScene;
+        wormholeOtherScene = temp;
     }
 
     // Update camera (player cam === outer ring cam) position
@@ -278,7 +270,7 @@ function render()
 
     // Render outer ring with FXAA
     effectComposer.render();
-    effectComposer.render();
+    effectComposer.render(); // This fixes the 1f latency bug
     // Render inner circle with cube map
     icm.getCubeCam().update(renderer, otherScene);
 
