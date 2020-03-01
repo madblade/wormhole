@@ -184,22 +184,14 @@ function teleport(newPosition)
     ossMesh.position.copy(exit);
 
     // Mirror newPosition from worm center
-    // newPosition.set(
-    //     entry.x + (exit.x - newPosition.x),
-    //     entry.y + (exit.y - newPosition.y),
-    //     entry.z + (exit.z - newPosition.z)
-    // );
-    // n - p
-    let v = new Vector3(
-        entry.x - newPosition.x,
-        entry.y - newPosition.y,
-        entry.z - newPosition.z
-    ); // flip on z axis
+    // ex + (en - p)
     newPosition.set(
-        exit.x - v.x,
-        exit.y - v.y,
-        exit.z + v.z,
+        exit.x - (entry.x - newPosition.x),
+        exit.y - (entry.y - newPosition.y),
+        exit.z + (entry.z - newPosition.z) // flip on z axis
     );
+    // Simply flip camera x and y
+    cameraWrapper.setRotationXZ(-cameraWrapper.rx, -cameraWrapper.ry);
 }
 
 function updatePlayerPosition()

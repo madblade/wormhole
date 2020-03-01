@@ -4,7 +4,6 @@ import {
     CylinderBufferGeometry,
     IcosahedronBufferGeometry,
     Mesh, MeshBasicMaterial,
-    MeshNormalMaterial,
     MeshPhongMaterial,
     SphereBufferGeometry,
     TetrahedronBufferGeometry

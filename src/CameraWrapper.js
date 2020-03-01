@@ -43,6 +43,13 @@ CameraWrapper.prototype.rotateZ = function(deltaZ) {
     this.updateQuaternionFromRotation();
 };
 
+CameraWrapper.prototype.setRotationXZ = function(x, z) {
+    this.rx = x;
+    this.rx = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.rx));
+    this.ry = z;
+    this.updateQuaternionFromRotation();
+};
+
 CameraWrapper.prototype.updateQuaternionFromRotation = function()
 {
     let q1 = new Quaternion();
