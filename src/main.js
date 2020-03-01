@@ -7,7 +7,7 @@ import {
 } from 'three';
 import { Room } from './Room';
 import {
-    addCubeWall, addListeners, getHalfSphere, getSmallSphere, newComposer
+    addCubeWall, addListeners, addWall, getHalfSphere, getSmallSphere, newComposer
 } from './factory';
 import { InnerCubeMap } from './InnerCubeMap';
 import { CameraWrapper } from './CameraWrapper';
@@ -30,7 +30,8 @@ let FAR = 5000;
 
 let cameraWrapper;
 let camera;
-let scene;
+let scene1;
+let scene2;
 let renderer;
 
 let state = {
@@ -76,15 +77,14 @@ function init() {
     container.appendChild(renderer.domElement);
 
     // scene
-    scene = new Scene();
+    scene1 = new Scene();
+    scene2 = new Scene();
 
     // camera
     cameraWrapper = new CameraWrapper(VIEW_ANGLE, ASPECT, NEAR, FAR);
     camera = cameraWrapper.getRecorder();
-    // cameraWrapper.setUpRotation(-Math.PI / 2, 0, 0);
-    // cameraWrapper.setXRotation(Math.PI / 2);
     cameraWrapper.setCameraPosition(0, 75, 160);
-    scene.add(cameraWrapper.get3DObject());
+    scene1.add(cameraWrapper.get3DObject());
 
     // Wormhole
     let antialiasFactor = 1;
@@ -109,28 +109,29 @@ function init() {
     );
 
     // Rotate cube camera
-    icm.setUpRotation(-Math.PI / 2, Math.PI, 0);
-    icm.setXRotation(Math.PI / 2);
     let cubeCamWrapper = icm.getWrapper();
-    scene.add(cubeCamWrapper);
+    scene1.add(cubeCamWrapper);
 
     // Rendering
-    effectComposer = newComposer(renderer, scene, camera, oss.getRenderTarget());
+    effectComposer = newComposer(renderer, scene1, camera, oss.getRenderTarget());
 
     // Objects
     halfSphere = getHalfSphere();
     // scene.add(halfSphere);
 
     smallSphere = getSmallSphere();
-    scene.add(smallSphere);
+    scene1.add(smallSphere);
 
     let room = new Room(0x7f7fff, 0x00ff00, 0xff0000, 0xffffff);
     let roomMesh = room.getMesh();
     // roomMesh.scale.set(2, 2, 2);
-    scene.add(roomMesh);
+    scene1.add(roomMesh);
 
-    // Cube tunnel
-    addCubeWall(scene);
+    // Background
+    addWall(scene1, 'tet');
+    addCubeWall(scene1);
+
+    addWall(scene2, 'box');
 
     // Controls
     addListeners(
@@ -216,23 +217,23 @@ function animate() {
     cc.lookAt(to);
 
     // Remove drawable objects
-    scene.remove(outerRing);
-    scene.remove(innerCircle);
+    scene1.remove(outerRing);
+    scene1.remove(innerCircle);
     innerCircle.visible = false;
 
     // Render outer ring with fxaa
     effectComposer.render();
     effectComposer.render();
     // Render inner circle with cube map
-    icm.getCubeCam().update(renderer, scene);
+    icm.getCubeCam().update(renderer, scene1);
     // oss.setScale(oss.getScale() + 0.001);
     // icm.setScale(icm.getScale() + 0.001);
 
     // Add drawable objects
     innerCircle.visible = true;
-    scene.add(outerRing);
-    scene.add(innerCircle);
+    scene1.add(outerRing);
+    scene1.add(innerCircle);
 
     // Render full scene
-    renderer.render(scene, camera);
+    renderer.render(scene1, camera);
 }

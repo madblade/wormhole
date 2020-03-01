@@ -1,23 +1,14 @@
 import {
-    Euler,
     Object3D, PerspectiveCamera, Quaternion, Vector3
 } from 'three';
 
 let CameraWrapper = function(fov, aspect, nearPlane, farPlane)
 {
-    // Wrap for primitive manipulation simplicity.
     let camera = new PerspectiveCamera(fov, aspect, nearPlane, farPlane);
     let up = new Object3D();
     up.add(camera);
 
-    // 4D logic
-    this.cameraTransform = [
-        0, 0, 0,    // Pos transform
-        0, 0, 0     // Rot transform
-    ];
-
-    // Don't expose these internal variables.
-    this.cameraObject = camera;     // Explicit     (constant)
+    this.cameraObject = camera;
 
     this.rx = 0;
     this.ry = 0;
@@ -79,7 +70,7 @@ CameraWrapper.prototype.getForwardVector = function(d)
     if (bw) nv.add(new Vector3(0, 0, 1));
     if (rg) nv.add(new Vector3(1, 0, 0));
     if (lf) nv.add(new Vector3(-1, 0, 0));
-    if (up) nv.add(new Vector3(0, 1, 0));
+    if (up) nv.add(new Vector3(0, 1, 0)); // camera up +y
     if (dn) nv.add(new Vector3(0, -1, 0));
     nv.normalize();
     let camQ = new Quaternion();

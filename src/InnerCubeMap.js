@@ -111,14 +111,10 @@ let InnerCubeMap = function(
     this.mesh.position.set(this.entry.x, this.entry.y, this.entry.z);
 
     this.exit = exit;
-    this.pitch = new Object3D();
-    this.yaw = new Object3D();
     this.wrapper = new Object3D();
     this.wrapper.position.set(this.exit.x, this.exit.y, this.exit.z);
     this.wrapper.rotation.reorder('ZYX');
-    this.pitch.add(this.cubeCam);
-    this.yaw.add(this.pitch);
-    this.wrapper.add(this.yaw);
+    this.wrapper.add(this.cubeCam);
 };
 
 InnerCubeMap.prototype.getScale = function()
@@ -132,30 +128,6 @@ InnerCubeMap.prototype.setScale = function(scale)
     this.material.uniforms.radius.value = newRadius;
     this.mesh.scale.set(scale, scale, 1);
     this.material.uniformsNeedUpdate = true;
-};
-
-InnerCubeMap.prototype.setXRotation = function(x)
-{
-    this.pitch.rotation.x = x;
-};
-
-InnerCubeMap.prototype.setZRotation = function(z)
-{
-    this.yaw.rotation.z = z;
-};
-
-InnerCubeMap.prototype.setUpRotation = function(x, y, z)
-{
-    this.wrapper.rotation.set(x, y, z);
-};
-
-InnerCubeMap.prototype.updateCamPosition = function(p)
-{
-    this.wrapper.position.set(
-        this.exit.x + p.x - this.entry.x,
-        this.exit.y + p.y - this.entry.y,
-        this.exit.z + p.z - this.entry.z
-    );
 };
 
 InnerCubeMap.prototype.getExit = function()

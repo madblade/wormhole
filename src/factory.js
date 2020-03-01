@@ -1,4 +1,14 @@
-import {BoxGeometry, CylinderBufferGeometry, IcosahedronBufferGeometry, Mesh, MeshPhongMaterial, SphereBufferGeometry} from 'three';
+import {
+    BoxBufferGeometry,
+    BoxGeometry,
+    CylinderBufferGeometry,
+    IcosahedronBufferGeometry,
+    Mesh, MeshBasicMaterial,
+    MeshNormalMaterial,
+    MeshPhongMaterial,
+    SphereBufferGeometry,
+    TetrahedronBufferGeometry
+} from 'three';
 import {ShaderPass} from 'three/examples/jsm/postprocessing/ShaderPass';
 import {FXAAShader} from 'three/examples/jsm/shaders/FXAAShader';
 import {EffectComposer} from 'three/examples/jsm/postprocessing/EffectComposer';
@@ -34,6 +44,28 @@ function getSmallSphere()
     let material = new MeshPhongMaterial({ color: 0xffffff, emissive: 0x333333, flatShading: true });
     let smallSphere = new Mesh(geometry, material);
     return smallSphere;
+}
+
+function addWall(scene, type)
+{
+    let tetGeo = type === 'tet' ?
+        new TetrahedronBufferGeometry(12.5, 0) :
+        new BoxBufferGeometry(12.5, 12.5, 12.5);
+    let tet; let pi = Math.PI;
+    let r = 200; let phiMax = 20; let theMax = 20;
+    for (let phi = 1; phi < phiMax - 1; ++phi) {
+        for (let the = 1; the < theMax - 1; ++the) {
+            tet = new Mesh(tetGeo, new MeshBasicMaterial(
+                { color: 0xffffff * Math.random() }
+            ));
+            let phiTrue = pi * phi / phiMax;
+            let theTrue = 2 * pi * the / theMax;
+            tet.position.x = r * Math.sin(phiTrue) * Math.cos(theTrue);
+            tet.position.y = r * Math.sin(phiTrue) * Math.sin(theTrue);
+            tet.position.z = r * Math.cos(phiTrue);
+            scene.add(tet);
+        }
+    }
 }
 
 function addCubeWall(scene)
@@ -186,4 +218,4 @@ function addListeners(
     });
 }
 
-export { addListeners, getHalfSphere, getSmallSphere, addCubeWall, newComposer };
+export { addListeners, getHalfSphere, getSmallSphere, addWall, addCubeWall, newComposer };
