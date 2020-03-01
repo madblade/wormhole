@@ -53,8 +53,8 @@ function addWall(scene, type)
         new BoxBufferGeometry(12.5, 12.5, 12.5);
     let tet; let pi = Math.PI;
     let r = 200; let phiMax = 20; let theMax = 20;
-    for (let phi = 1; phi < phiMax - 1; ++phi) {
-        for (let the = 1; the < theMax - 1; ++the) {
+    for (let phi = 2; phi < phiMax - 1; ++phi) {
+        for (let the = 0; the < theMax; ++the) {
             tet = new Mesh(tetGeo, new MeshBasicMaterial(
                 { color: 0xffffff * Math.random() }
             ));
@@ -103,7 +103,7 @@ function newComposer(rendrr, sc, cam, target)
 
 function addListeners(
     camera, icm,
-    halfSphere, state,
+    state,
     eventContainer
 ) {
     const azerty = {

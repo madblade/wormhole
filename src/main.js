@@ -7,7 +7,9 @@ import {
 } from 'three';
 import { Room } from './Room';
 import {
-    addCubeWall, addListeners, addWall, getHalfSphere, getSmallSphere, newComposer
+    addCubeWall, addListeners, addWall,
+    // getHalfSphere,
+    getSmallSphere, newComposer
 } from './factory';
 import { InnerCubeMap } from './InnerCubeMap';
 import { CameraWrapper } from './CameraWrapper';
@@ -46,15 +48,17 @@ let state = {
 let oss;
 let icm;
 
-let halfSphere;
+// let halfSphere;
 let smallSphere;
-let effectComposer;
+let effectComposerS1;
+let effectComposerS2;
 
 let wormholeRadius;
 let wormholeEntry;
 let wormholeExit;
 
 let eventContainer = [];
+let currentWorld = '1';
 
 // TODO 1. separate scenes
 // TODO 2. refactor camera wrapper to use quaternions
@@ -100,6 +104,7 @@ function init() {
         wormholeRadius, 2 * wormholeRadius,
         wormholeEntry, cameraWrapper
     );
+    scene1.add(oss.getMesh());
 
     // Inner ring
     icm = new InnerCubeMap(width, height,
@@ -107,18 +112,16 @@ function init() {
         wormholeEntry,
         wormholeExit
     );
-
-    // Rotate cube camera
-    let cubeCamWrapper = icm.getWrapper();
-    scene1.add(cubeCamWrapper);
+    scene1.add(icm.getMesh());
+    scene2.add(icm.getWrapper()); // Rotate cube cam
 
     // Rendering
-    effectComposer = newComposer(renderer, scene1, camera, oss.getRenderTarget());
+    effectComposerS1 = newComposer(renderer, scene1, camera, oss.getRenderTarget());
+    effectComposerS2 = newComposer(renderer, scene2, camera, oss.getRenderTarget());
 
     // Objects
-    halfSphere = getHalfSphere();
+    // halfSphere = getHalfSphere();
     // scene.add(halfSphere);
-
     smallSphere = getSmallSphere();
     scene1.add(smallSphere);
 
@@ -130,13 +133,12 @@ function init() {
     // Background
     addWall(scene1, 'tet');
     addCubeWall(scene1);
-
     addWall(scene2, 'box');
 
     // Controls
     addListeners(
         cameraWrapper, icm,
-        halfSphere, state,
+        state,
         eventContainer
     );
 }
@@ -146,6 +148,77 @@ function init() {
 // 5. adjust ring inner size
 // On top of setting object.renderOrder you have to set
 // material.depthTest to false on the relevant objects.
+
+function teleport(newPosition)
+{
+    let cam = cameraWrapper.get3DObject();
+    let ossMesh = oss.getMesh();
+    let icmMesh = icm.getMesh();
+    let icmCam = icm.getWrapper();
+    let sourceScene; let sourcePosition;
+    let destinationScene; let destinationPosition;
+
+    if (currentWorld === '1') {
+        currentWorld = '2';
+        sourceScene = scene1; sourcePosition = wormholeEntry;
+        destinationScene = scene2; destinationPosition = wormholeExit;
+    } else {
+        currentWorld = '1';
+        sourceScene = scene2; sourcePosition = wormholeExit;
+        destinationScene = scene1; destinationPosition = wormholeEntry;
+    }
+
+    sourceScene.remove(cam);
+    sourceScene.remove(ossMesh);
+    sourceScene.remove(icmMesh);
+    destinationScene.remove(icmCam);
+
+    destinationScene.add(cam);
+    destinationScene.add(ossMesh);
+    destinationScene.add(icmMesh);
+    sourceScene.add(icmCam);
+
+    newPosition.set(
+        newPosition.x + wormholeExit.x - wormholeEntry.x,
+        newPosition.y + wormholeExit.y - wormholeEntry.y,
+        newPosition.z + wormholeExit.z - wormholeEntry.z,
+    );
+}
+
+function render()
+{
+    let innerCircle = icm.getMesh();
+    let outerRing = oss.getMesh();
+    let effectComposer;
+    let currentScene;
+    let otherScene;
+    if (currentWorld === '1') {
+        effectComposer = effectComposerS1;
+        currentScene = scene1;
+        otherScene = scene2;
+    } else {
+        effectComposer = effectComposerS2;
+        currentScene = scene2;
+        otherScene = scene1;
+    }
+
+    // Remove drawable objects
+    outerRing.visible = false;
+    innerCircle.visible = false;
+
+    // Render outer ring with FXAA
+    effectComposer.render();
+    effectComposer.render();
+    // Render inner circle with cube map
+    icm.getCubeCam().update(renderer, otherScene);
+
+    // Add drawable objects
+    outerRing.visible = true;
+    innerCircle.visible = true;
+
+    // Render full scene
+    renderer.render(currentScene, camera);
+}
 
 function animate() {
     requestAnimationFrame(animate);
@@ -186,14 +259,10 @@ function animate() {
 
     // Intersect with wormhole horizon
     if (oldDistance > wormholeRadius * 0.75 && newDistance < wormholeRadius * 0.75) {
-        // TODO slightly curve trajectory when crossing
+        // TODO curve trajectory when crossing
         // Teleport to other wormhole end
         // console.log(`${oldDistance} -> ${newDistance} [${wormholeRadius}]`);
-        newPosition.set(
-            newPosition.x + wormholeExit.x - wormholeEntry.x,
-            newPosition.y + wormholeExit.y - wormholeEntry.y,
-            newPosition.z + wormholeExit.z - wormholeEntry.z,
-        );
+        teleport(newPosition);
     }
     cameraWrapper.setCameraPosition(newPosition.x, newPosition.y, newPosition.z);
 
@@ -216,24 +285,6 @@ function animate() {
     cc.setRotationFromQuaternion(q);
     cc.lookAt(to);
 
-    // Remove drawable objects
-    scene1.remove(outerRing);
-    scene1.remove(innerCircle);
-    innerCircle.visible = false;
-
-    // Render outer ring with fxaa
-    effectComposer.render();
-    effectComposer.render();
-    // Render inner circle with cube map
-    icm.getCubeCam().update(renderer, scene1);
-    // oss.setScale(oss.getScale() + 0.001);
-    // icm.setScale(icm.getScale() + 0.001);
-
-    // Add drawable objects
-    innerCircle.visible = true;
-    scene1.add(outerRing);
-    scene1.add(innerCircle);
-
-    // Render full scene
-    renderer.render(scene1, camera);
+    // Render
+    render();
 }
