@@ -71,7 +71,8 @@ function newComposer(rendrr, sc, cam, target)
 
 function addListeners(
     camera, icm,
-    halfSphere, state
+    halfSphere, state,
+    eventContainer
 ) {
     const azerty = {
         FORWARD: 90, // z
@@ -166,16 +167,14 @@ function addListeners(
 
     document.addEventListener('focusout', resetState);
     document.addEventListener('visibilitychange', resetState);
-    document.addEventListener('mouseout', resetState);
+    // document.addEventListener('mouseout', resetState);
 
     document.addEventListener('mousemove', event => {
         if (!state.mouseDown) return;
         let relX = event.movementX || event.mozMovementX || event.webkitMovementX || 0;
         let relY = event.movementY || event.mozMovementY || event.webkitMovementY || 0;
         // rotate main camera
-        // TODO rotate only in animate
-        camera.rotateZ(-relX * 0.002);
-        camera.rotateX(-relY * 0.002);
+        eventContainer.push([-relX * 0.002, -relY * 0.002]);
     });
 
     document.addEventListener('mousedown', () => {

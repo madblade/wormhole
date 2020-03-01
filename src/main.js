@@ -53,6 +53,8 @@ let wormholeRadius;
 let wormholeEntry;
 let wormholeExit;
 
+let eventContainer = [];
+
 // TODO 1. separate scenes
 // TODO 2. refactor camera wrapper to use quaternions
 // TODO 3. camera teleport position
@@ -79,8 +81,8 @@ function init() {
     // camera
     cameraWrapper = new CameraWrapper(VIEW_ANGLE, ASPECT, NEAR, FAR);
     camera = cameraWrapper.getRecorder();
-    cameraWrapper.setUpRotation(-Math.PI / 2, 0, 0);
-    cameraWrapper.setXRotation(Math.PI / 2);
+    // cameraWrapper.setUpRotation(-Math.PI / 2, 0, 0);
+    // cameraWrapper.setXRotation(Math.PI / 2);
     cameraWrapper.setCameraPosition(0, 75, 160);
     scene.add(cameraWrapper.get3DObject());
 
@@ -133,7 +135,8 @@ function init() {
     // Controls
     addListeners(
         cameraWrapper, icm,
-        halfSphere, state
+        halfSphere, state,
+        eventContainer
     );
 }
 
@@ -156,6 +159,14 @@ function animate() {
     smallSphere.rotation.y =  Math.PI / 2  - timer * 0.1;
     smallSphere.rotation.z = timer * 0.8;
 
+    // Update controls
+    for (let i = 0; i < eventContainer.length; ++i) {
+        let e = eventContainer[i];
+        if (e[0]) cameraWrapper.rotateZ(e[0]);
+        if (e[1]) cameraWrapper.rotateX(e[1]);
+    }
+    eventContainer.length = 0;
+
     // Update camera position
     let p = cameraWrapper.getCameraPosition();
     let fw = cameraWrapper.getForwardVector([
@@ -163,7 +174,7 @@ function animate() {
         state.upDown, state.downDown
     ], false);
     let oldDistance = p.distanceTo(wormholeEntry);
-    let newPosition = new Vector3(p.x + fw[0], p.y + fw[1], p.z + fw[2]);
+    let newPosition = new Vector3(p.x + fw.x, p.y + fw.y, p.z + fw.z);
     let newDistance = newPosition.distanceTo(wormholeEntry);
 
     let exit = icm.getExit();
