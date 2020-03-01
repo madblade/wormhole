@@ -101,6 +101,7 @@ let InnerCubeMap = function(
         },
         vertexShader: InnerCubeMapVS,
         fragmentShader: InnerCubeMapFS,
+        // wireframe: true,
         depthTest: false,
         // renderOrder: 9999
     });

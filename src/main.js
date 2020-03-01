@@ -182,12 +182,14 @@ function teleport(newPosition)
     sourceScene.add(icmCam);
 
     icmMesh.position.copy(exit);
+    icm.getWrapper().position.copy(entry);
     ossMesh.position.copy(exit);
 
+    // Mirror newPosition from worm center
     newPosition.set(
-        newPosition.x + exit.x - entry.x,
-        newPosition.y + exit.y - entry.y,
-        newPosition.z + exit.z - entry.z,
+        entry.x + exit.x - newPosition.x,
+        entry.y + exit.y - newPosition.y,
+        entry.z + exit.z - newPosition.z
     );
 }
 
@@ -210,14 +212,21 @@ function updatePlayerPosition()
     ], false);
     let oldDistance = p.distanceTo(wormholeCurrentScene);
     let newPosition = new Vector3(p.x + fw.x, p.y + fw.y, p.z + fw.z);
-
     let newDistance = newPosition.distanceTo(wormholeCurrentScene);
+
     // Intersect with wormhole horizon
     if (oldDistance > wormholeRadius * 0.75 && newDistance < wormholeRadius * 0.75) {
         // TODO curve trajectory when crossing
         // Teleport to other wormhole end
         // console.log(`${oldDistance} -> ${newDistance} [${wormholeRadius}]`);
         teleport(newPosition);
+        if (currentWorld === '1') {
+            wormholeCurrentScene = icm.getEntry();
+            wormholeOtherScene = icm.getExit();
+        } else {
+            wormholeCurrentScene = icm.getExit();
+            wormholeOtherScene = icm.getEntry();
+        }
     }
 
     // Update camera (player cam === outer ring cam) position
