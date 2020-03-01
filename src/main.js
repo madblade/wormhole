@@ -60,8 +60,6 @@ let wormholeExit;
 let eventContainer = [];
 let currentWorld = '1';
 
-// TODO 1. separate scenes
-// TODO 3. camera teleport position
 // TODO 4. camera teleport orientation
 // TODO 5. curve trajectory between 2r and .75r
 // TODO 6. study transition smoothness
@@ -186,10 +184,21 @@ function teleport(newPosition)
     ossMesh.position.copy(exit);
 
     // Mirror newPosition from worm center
+    // newPosition.set(
+    //     entry.x + (exit.x - newPosition.x),
+    //     entry.y + (exit.y - newPosition.y),
+    //     entry.z + (exit.z - newPosition.z)
+    // );
+    // n - p
+    let v = new Vector3(
+        entry.x - newPosition.x,
+        entry.y - newPosition.y,
+        entry.z - newPosition.z
+    ); // flip on z axis
     newPosition.set(
-        entry.x + exit.x - newPosition.x,
-        entry.y + exit.y - newPosition.y,
-        entry.z + exit.z - newPosition.z
+        exit.x - v.x,
+        exit.y - v.y,
+        exit.z + v.z,
     );
 }
 
@@ -215,7 +224,7 @@ function updatePlayerPosition()
     let newDistance = newPosition.distanceTo(wormholeCurrentScene);
 
     // Intersect with wormhole horizon
-    if (oldDistance > wormholeRadius * 0.75 && newDistance < wormholeRadius * 0.75) {
+    if (oldDistance > wormholeRadius * 0.5 && newDistance < wormholeRadius * 0.5) {
         // TODO curve trajectory when crossing
         // Teleport to other wormhole end
         // console.log(`${oldDistance} -> ${newDistance} [${wormholeRadius}]`);
