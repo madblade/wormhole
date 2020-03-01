@@ -61,7 +61,6 @@ let eventContainer = [];
 let currentWorld = '1';
 
 // TODO 1. separate scenes
-// TODO 2. refactor camera wrapper to use quaternions
 // TODO 3. camera teleport position
 // TODO 4. camera teleport orientation
 // TODO 5. curve trajectory between 2r and .75r
@@ -155,17 +154,21 @@ function teleport(newPosition)
     let ossMesh = oss.getMesh();
     let icmMesh = icm.getMesh();
     let icmCam = icm.getWrapper();
-    let sourceScene; let sourcePosition;
-    let destinationScene; let destinationPosition;
+    let sourceScene; let entry;
+    let destinationScene; let exit;
 
     if (currentWorld === '1') {
         currentWorld = '2';
-        sourceScene = scene1; sourcePosition = wormholeEntry;
-        destinationScene = scene2; destinationPosition = wormholeExit;
+        sourceScene = scene1;
+        destinationScene = scene2;
+        entry = icm.getEntry();
+        exit = icm.getExit();
     } else {
         currentWorld = '1';
-        sourceScene = scene2; sourcePosition = wormholeExit;
-        destinationScene = scene1; destinationPosition = wormholeEntry;
+        sourceScene = scene2;
+        destinationScene = scene1;
+        entry = icm.getExit();
+        exit = icm.getEntry();
     }
 
     sourceScene.remove(cam);
@@ -178,11 +181,68 @@ function teleport(newPosition)
     destinationScene.add(icmMesh);
     sourceScene.add(icmCam);
 
+    icmMesh.position.copy(exit);
+    ossMesh.position.copy(exit);
+
     newPosition.set(
-        newPosition.x + wormholeExit.x - wormholeEntry.x,
-        newPosition.y + wormholeExit.y - wormholeEntry.y,
-        newPosition.z + wormholeExit.z - wormholeEntry.z,
+        newPosition.x + exit.x - entry.x,
+        newPosition.y + exit.y - entry.y,
+        newPosition.z + exit.z - entry.z,
     );
+}
+
+function updatePlayerPosition()
+{
+    let wormholeCurrentScene;
+    let wormholeOtherScene;
+    if (currentWorld === '1') {
+        wormholeCurrentScene = icm.getEntry();
+        wormholeOtherScene = icm.getExit();
+    } else {
+        wormholeCurrentScene = icm.getExit();
+        wormholeOtherScene = icm.getEntry();
+    }
+
+    let p = cameraWrapper.getCameraPosition();
+    let fw = cameraWrapper.getForwardVector([
+        state.forwardDown, state.backDown, state.rightDown, state.leftDown,
+        state.upDown, state.downDown
+    ], false);
+    let oldDistance = p.distanceTo(wormholeCurrentScene);
+    let newPosition = new Vector3(p.x + fw.x, p.y + fw.y, p.z + fw.z);
+
+    let newDistance = newPosition.distanceTo(wormholeCurrentScene);
+    // Intersect with wormhole horizon
+    if (oldDistance > wormholeRadius * 0.75 && newDistance < wormholeRadius * 0.75) {
+        // TODO curve trajectory when crossing
+        // Teleport to other wormhole end
+        // console.log(`${oldDistance} -> ${newDistance} [${wormholeRadius}]`);
+        teleport(newPosition);
+    }
+
+    // Update camera (player cam === outer ring cam) position
+    cameraWrapper.setCameraPosition(newPosition.x, newPosition.y, newPosition.z);
+
+    // Inner and outer wormhole orientation to face camera
+    let innerCircle = icm.getMesh();
+    let outerRing = oss.getMesh();
+    let rec = cameraWrapper.getRecorder();
+    let q = new Quaternion();
+    rec.getWorldQuaternion(q);
+    innerCircle.setRotationFromQuaternion(q); // reset up vector
+    outerRing.setRotationFromQuaternion(q); // reset up vector
+    innerCircle.lookAt(newPosition);
+    outerRing.lookAt(newPosition);
+
+    // Cubecam orientation flipped (for entry effect)
+    let to = new Vector3(
+        wormholeOtherScene.x - (wormholeCurrentScene.x - p.x),
+        wormholeOtherScene.y - (wormholeCurrentScene.y - p.y),
+        wormholeOtherScene.z + (wormholeCurrentScene.z - p.z)
+    );
+    let cc = icm.getCubeCam();
+    cc.setRotationFromQuaternion(q);
+    cc.lookAt(to);
 }
 
 function render()
@@ -242,48 +302,7 @@ function animate() {
     eventContainer.length = 0;
 
     // Update camera position
-    let p = cameraWrapper.getCameraPosition();
-    let fw = cameraWrapper.getForwardVector([
-        state.forwardDown, state.backDown, state.rightDown, state.leftDown,
-        state.upDown, state.downDown
-    ], false);
-    let oldDistance = p.distanceTo(wormholeEntry);
-    let newPosition = new Vector3(p.x + fw.x, p.y + fw.y, p.z + fw.z);
-    let newDistance = newPosition.distanceTo(wormholeEntry);
-
-    let exit = icm.getExit();
-    let entry = icm.getEntry();
-    let innerCircle = icm.getMesh();
-    let outerRing = oss.getMesh();
-    let rec = cameraWrapper.getRecorder();
-
-    // Intersect with wormhole horizon
-    if (oldDistance > wormholeRadius * 0.75 && newDistance < wormholeRadius * 0.75) {
-        // TODO curve trajectory when crossing
-        // Teleport to other wormhole end
-        // console.log(`${oldDistance} -> ${newDistance} [${wormholeRadius}]`);
-        teleport(newPosition);
-    }
-    cameraWrapper.setCameraPosition(newPosition.x, newPosition.y, newPosition.z);
-
-    let outerCamera = oss.getCamera();
-    outerCamera.position.set(newPosition.x, newPosition.y, newPosition.z);
-
-    // Update drawable orientation
-    let q = new Quaternion();
-    rec.getWorldQuaternion(q);
-    innerCircle.setRotationFromQuaternion(q); // reset up vector
-    outerRing.setRotationFromQuaternion(q); // ditto
-    innerCircle.lookAt(newPosition);
-    outerRing.lookAt(newPosition);
-    let to = new Vector3(
-        exit.x - (entry.x - p.x),
-        exit.y - (entry.y - p.y),
-        exit.z + (entry.z - p.z)
-    );
-    let cc = icm.getCubeCam();
-    cc.setRotationFromQuaternion(q);
-    cc.lookAt(to);
+    updatePlayerPosition();
 
     // Render
     render();
