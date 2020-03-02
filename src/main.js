@@ -25,7 +25,7 @@ let WIDTH = window.innerWidth;
 let HEIGHT = window.innerHeight;
 
 // camera
-let VIEW_ANGLE = 45;
+let VIEW_ANGLE = 90;
 let ASPECT = WIDTH / HEIGHT;
 let NEAR = 0.1; // precision
 let FAR = 5000;
@@ -127,14 +127,14 @@ function init() {
     smallSphere = getSmallSphere();
     scene1.add(smallSphere);
 
-    let room = new Room(0x7f7fff, 0x00ff00, 0xff0000, 0xffffff);
-    let roomMesh = room.getMesh();
+    // let room = new Room(0x7f7fff, 0x00ff00, 0xff0000, 0xffffff);
+    // let roomMesh = room.getMesh();
     // roomMesh.scale.set(2, 2, 2);
-    scene1.add(roomMesh);
+    // scene1.add(roomMesh);
 
     // Background
     addWall(scene1, 'tet');
-    addCubeWall(scene1);
+    // addCubeWall(scene1);
     addWall(scene2, 'box');
 
     // Controls
@@ -182,8 +182,6 @@ function teleport(newPosition)
     icm.getWrapper().position.copy(entry);
     ossMesh.position.copy(exit);
 
-    // Simply flip camera x and y
-    // TODO fix! this is only when i look into the center
     // let diffToCenter = new Vector3();
     // diffToCenter.copy(newPosition).negate().add(entry).normalize();
     // let fw = cameraWrapper.getForwardVector([1, 0, 0, 0, 0, 0]);
@@ -204,6 +202,11 @@ function teleport(newPosition)
     dtc.copy(newPosition).negate().add(entry).normalize();
     let phi = Math.PI / 2 - Math.acos(dtc.y);
     let the = Math.atan2(dtc.x, dtc.z) - Math.PI;
+    // This is an approximation to reduce gimbal lock precision problems.
+    // Use quaternions instead for realistic flight.
+    if (phi < -Math.PI / 4) the = cameraWrapper.ry;
+    if (phi > Math.PI / 4) the = cameraWrapper.ry;
+    // Simply flip camera x and y
     cameraWrapper.setRotationXZ(
         -phi + (cameraWrapper.rx - phi),
         -the + (cameraWrapper.ry - the)
@@ -241,6 +244,7 @@ function updatePlayerPosition()
     let newDistance = newPosition.distanceTo(wormholeCurrentScene);
 
     // Intersect with wormhole horizon
+    // TODO must curve toward the center
     if (oldDistance >= wormholeRadius * 0.5 && newDistance < wormholeRadius * 0.5) {
         // console.log(`${oldDistance} -> ${newDistance} [${wormholeRadius}]`);
         teleport(newPosition);

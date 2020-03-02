@@ -34,11 +34,12 @@ void main() {
     float initialDistance = distance(v_center, v_position.xyz);
     float d2 = (initialDistance - innerRadius) / (outerRadius - innerRadius);
     float factor = 1.0 - d2;
-    factor = pow(factor, 2.0);
+    factor = pow(factor, 8.0);
         // TODO this power factor can be exposed
 
-    vec2 pxy = pos_frag.xy + (cent_frag.xy - pos_frag.xy) * factor * 2.0;
     float pw = pos_frag.w;
+    vec2 pxy = pos_frag.xy + (cent_frag.xy - pos_frag.xy) * factor * 2.0;
+        // * 1.0 to remove reflection
     vec2 correctedUv = (vec2(pxy / pw) + vec2(1.0)) * 0.5;
     gl_FragColor = texture2D(texture1, correctedUv);
 }`;
@@ -50,7 +51,7 @@ let OuterReversedStretch = function(
     origin, cameraWrapper)
 {
     this.innerRadius = innerRadius;
-    this.outerRadius = outerRadius;
+    this.outerRadius = 2 * outerRadius;
 
     let cam = cameraWrapper.getRecorder();
     this.camera = new PerspectiveCamera(cam.fov, cam.aspect, cam.near, cam.far);
