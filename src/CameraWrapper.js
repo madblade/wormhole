@@ -8,7 +8,11 @@ let CameraWrapper = function(fov, aspect, nearPlane, farPlane)
     let up = new Object3D();
     up.add(camera);
 
+    this.wrapper = new Object3D();
     this.cameraObject = camera;
+    this.wrapper.add(this.cameraObject);
+    this._rx = 0;
+    this._ry = 0;
 
     this.rx = 0;
     this.ry = 0;
@@ -21,7 +25,7 @@ CameraWrapper.prototype.getRecorder = function() {
 };
 
 CameraWrapper.prototype.get3DObject = function() {
-    return this.cameraObject;
+    return this.wrapper;
 };
 
 CameraWrapper.prototype.getCameraPosition = function() {
@@ -32,12 +36,32 @@ CameraWrapper.prototype.getUpRotation = function() {
     return this.get3DObject().rotation;
 };
 
+CameraWrapper.prototype.applyWrapperQuaternion = function(q)
+{
+    this.wrapper.quaternion.multiply(q);
+};
+
+CameraWrapper.prototype.setWrapperRotation = function(rx, ry)
+{
+    this._rx += rx;
+    this._ry += ry;
+    let q1 = new Quaternion();
+    let q2 = new Quaternion();
+    q1.setFromAxisAngle(new Vector3(1, 0, 0), this._rx);
+    q2.setFromAxisAngle(new Vector3(0, 1, 0), this._ry);
+    q2.multiply(q1);
+    this.wrapper.quaternion.copy(q2);
+    // this.wrapper.rotation.reorder('ZYX');
+    // this.wrapper.rotation.x = rx;
+    // this.wrapper.rotation.y = ry;
+};
+
 CameraWrapper.prototype.rotateX = function(deltaX) {
     this.rx += deltaX;
     // More convenient rotation without lock
-    if (this.rx > 3 * Math.PI / 2) this.rx -= 2 * Math.PI;
-    if (this.rx < -3 * Math.PI / 2) this.rx += 2 * Math.PI;
-    // this.rx = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.rx));
+    // if (this.rx > 3 * Math.PI / 2) this.rx -= 2 * Math.PI;
+    // if (this.rx < -3 * Math.PI / 2) this.rx += 2 * Math.PI;
+    this.rx = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.rx));
     this.updateQuaternionFromRotation();
 };
 
@@ -51,9 +75,9 @@ CameraWrapper.prototype.rotateZ = function(deltaZ) {
 
 CameraWrapper.prototype.setRotationXZ = function(x, z) {
     this.rx = x;
-    if (this.rx > 3 * Math.PI / 2) this.rx -= 2 * Math.PI;
-    if (this.rx < -3 * Math.PI / 2) this.rx += 2 * Math.PI;
-    // this.rx = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.rx));
+    // if (this.rx > 3 * Math.PI / 2) this.rx -= 2 * Math.PI;
+    // if (this.rx < -3 * Math.PI / 2) this.rx += 2 * Math.PI;
+    this.rx = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.rx));
     this.ry = z;
     this.updateQuaternionFromRotation();
 };

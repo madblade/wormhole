@@ -63,7 +63,7 @@ void main() {
     // distance to center normalized to radius
     float d = distance(vec3(0.0), v_position.xyz) / radius;
 
-    float pp = 2.0;
+    float pp = 4.0;
         // TODO this power can be exposed to stretch to 64 when the camera is close
     float b = pow(d, pp);
     float c = 0.5 - tan(b * 1.54); // b * pi / 2
@@ -93,6 +93,7 @@ let InnerCubeMap = function(
 
     this.geometry = new CircleGeometry(this.innerRadius, 64);
 
+    // TODO expose and adapt stretch factor
     this.material = new ShaderMaterial({
         side: FrontSide,
         uniforms: {
