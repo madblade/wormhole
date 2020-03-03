@@ -216,6 +216,26 @@ function updatePlayerPosition()
         state.upDown, state.downDown
     ], false);
     let oldDistance = p.distanceTo(wormholeCurrentScene);
+
+    /// Distort trajectory
+    if (fw.distanceTo(new Vector3(0, 0, 0)) > 0) {
+        // Gravity field
+        let g = 10;
+        let gravity = new Vector3();
+        gravity.copy(p).negate();
+        gravity.add(wormholeCurrentScene);
+        gravity.multiplyScalar(g / Math.pow(oldDistance, 3));
+        // Angle between new and fw
+        let newFw = new Vector3();
+        newFw.copy(fw).add(gravity);
+        let newDirection = new Vector3();
+        newDirection.copy(newFw).normalize();
+        let angle = new Quaternion();
+        angle.setFromUnitVectors(fw, newFw);
+        cameraWrapper.get3DObject().quaternion.premultiply(angle);
+        fw.copy(newFw);
+    }
+
     let newPosition = new Vector3(p.x + fw.x, p.y + fw.y, p.z + fw.z);
     let newDistance = newPosition.distanceTo(wormholeCurrentScene);
 
