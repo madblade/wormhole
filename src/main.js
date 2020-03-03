@@ -86,7 +86,7 @@ function init() {
     scene2 = new Scene();
 
     // camera
-    cameraWrapper = new CameraWrapper(VIEW_ANGLE, ASPECT, NEAR, FAR);
+    cameraWrapper = new CameraWrapper(VIEW_ANGLE, ASPECT, NEAR, FAR, 'quaternion');
     camera = cameraWrapper.getRecorder();
     cameraWrapper.setCameraPosition(0, 40, 100);
     cameraWrapper.setRotationXZ(0,  0);
@@ -184,49 +184,10 @@ function teleport(newPosition)
     icm.getWrapper().position.copy(entry);
     ossMesh.position.copy(exit);
 
-    // let diffToCenter = new Vector3();
-    // diffToCenter.copy(newPosition).negate().add(entry).normalize();
-    // let fw = cameraWrapper.getForwardVector([1, 0, 0, 0, 0, 0]);
-    //    // let q = new Quaternion();
-    //    // q.setFromUnitVectors(fw, diffToCenter);
-    //     let v1 = new Vector2(fw.x, fw.z); let v2 = new Vector2(diffToCenter.x, diffToCenter.z);
-    //    // let v3 = new Vector2(fw.y, fw.z); let v4 = new Vector2(diffToCenter.y, diffToCenter.z);
-    //    // let dot = Math.acos(fw.dot(diffToCenter));
-    //     let p = v1.dot(v2);
-    //     let dot1 = Math.sign(p) * Math.acos(p);
-    //    // let dot2 = Math.acos(v3.dot(v4));
-    // cameraWrapper.setWrapperRotation(0, -2 * dot1);
-    //    // cameraWrapper.applyWrapperQuaternion(q);
-    //    // cameraWrapper.applyWrapperQuaternion(q);
-    // cameraWrapper.setRotationXZ(-cameraWrapper.rx, -cameraWrapper.ry);
-
     // To center
     let dtc = new Vector3();
     dtc.copy(newPosition).negate().add(entry).normalize();
-    // let phi = Math.PI / 2 - Math.acos(dtc.y);
-    // let the = Math.atan2(dtc.x, dtc.z) - Math.PI;
-    // This is an approximation to reduce gimbal lock precision problems.
-    // Use quaternions instead for realistic flight.
-    // if (the < -Math.PI) the += 2 * Math.PI;
-    // if (the > Math.PI) the -= 2 * Math.PI;
-    // if (phi < -Math.PI / 4) the = cameraWrapper.ry;
-    // if (phi > Math.PI / 4) the = cameraWrapper.ry;
-
-    // let fw = cameraWrapper.getForwardVector([1, 0, 0, 0, 0, 0]).normalize();
-    // Simply flip camera x and y
-    // let q1 = new Quaternion();
-    // let q2 = new Quaternion();
-    // q1.setFromUnitVectors(fw, dtc);
-    // q2.setFromUnitVectors(dtc, fw);
     cameraWrapper.flipQuaternion(dtc);
-    // let phi1 = Math.PI / 2 - Math.acos(fw.y);
-    // let the1 = Math.atan2(fw.x, fw.z) - Math.PI;
-
-    // console.log(cameraWrapper.rx);
-    // cameraWrapper.setRotationXZ(
-    //     -phi + (cameraWrapper.rx - phi),
-    //     -the + (cameraWrapper.ry - the)
-    // );
 
     // Mirror newPosition from worm center
     // ex + (en - p)
@@ -254,8 +215,6 @@ function updatePlayerPosition()
         state.forwardDown, state.backDown, state.rightDown, state.leftDown,
         state.upDown, state.downDown
     ], false);
-    // fw.x = fw.y;
-    // fw.y = 0;
     let oldDistance = p.distanceTo(wormholeCurrentScene);
     let newPosition = new Vector3(p.x + fw.x, p.y + fw.y, p.z + fw.z);
     let newDistance = newPosition.distanceTo(wormholeCurrentScene);
@@ -273,13 +232,6 @@ function updatePlayerPosition()
 
     // Update camera (player cam === outer ring cam) position
     cameraWrapper.setCameraPosition(newPosition.x, newPosition.y, newPosition.z);
-
-    // let dtc = new Vector3();
-    // dtc.copy(newPosition).negate().add(wormholeCurrentScene).normalize();
-    // let phi = Math.PI / 2 - Math.acos(dtc.y);
-    // let the = Math.atan2(dtc.x, dtc.z) - Math.PI;
-    // cameraWrapper.setRotationXZ(phi,  the);
-    // console.log(`${cameraWrapper.rx} : ${cameraWrapper.ry}`);
 
     // Inner and outer wormhole orientation to face camera
     let innerCircle = icm.getMesh();
