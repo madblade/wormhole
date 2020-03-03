@@ -10,7 +10,9 @@ let CameraWrapper = function(fov, aspect, nearPlane, farPlane)
 
     this.wrapper = new Object3D();
     this.cameraObject = camera;
-    this.wrapper.add(this.cameraObject);
+    this.int = new Object3D(); this.dn = false;
+    this.wrapper.add(this.int);
+    this.int.add(this.cameraObject);
     this._rx = 0;
     this._ry = 0;
 
@@ -59,10 +61,14 @@ CameraWrapper.prototype.setWrapperRotation = function(rx, ry)
 CameraWrapper.prototype.rotateX = function(deltaX) {
     this.rx += deltaX;
     // More convenient rotation without lock
-    // if (this.rx > 3 * Math.PI / 2) this.rx -= 2 * Math.PI;
-    // if (this.rx < -3 * Math.PI / 2) this.rx += 2 * Math.PI;
-    this.rx = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.rx));
-    this.updateQuaternionFromRotation();
+    if (this.rx > 3 * Math.PI / 2) this.rx -= 2 * Math.PI;
+    if (this.rx < -3 * Math.PI / 2) this.rx += 2 * Math.PI;
+    // this.rx = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.rx));
+
+    let q = new Quaternion();
+    q.set(deltaX, 0, 0, 1).normalize();
+    this.cameraObject.quaternion.multiply(q);
+    // this.updateQuaternionFromRotation();
 };
 
 CameraWrapper.prototype.rotateZ = function(deltaZ) {
@@ -70,14 +76,54 @@ CameraWrapper.prototype.rotateZ = function(deltaZ) {
         this.ry -= deltaZ;
     else
         this.ry += deltaZ;
-    this.updateQuaternionFromRotation();
+
+    let q = new Quaternion();
+    q.set(0, deltaZ, 0, 1).normalize();
+    this.cameraObject.quaternion.multiply(q);
+    // this.updateQuaternionFromRotation();
+};
+
+CameraWrapper.prototype.flipQuaternion = function(
+    // q1, // forward to center rotation
+    // q2,
+    dtc) // center to forward rotation
+{
+    // qq.copy(this.cameraObject.quaternion);
+    // qq.multiply(q1); // rotate to center
+    // qq.set(-qq.x, -qq.y, qq.z, qq.w).normalize(); // flip
+    // qq.multiply(q2); // rotate to forward
+
+    // let lq = new Quaternion();
+    // lq.copy(this.cameraObject.quaternion);
+    // let lup = new Vector3(0, 1, 0);
+    // lup.applyQuaternion(lq);
+    // let lr = new Quaternion();
+    // lr.setFromAxisAngle(lup, Math.PI);
+
+    // let cq = new Quaternion();
+    // cq.copy(icm.getCubeCam().quaternion);
+    // let cup = new Vector3(0, 1, 0);
+    // cup.applyQuaternion(cq);
+    // let cr = new Quaternion();
+    // cr.setFromAxisAngle(cup, Math.PI);
+    // cq.multiply(cr);
+
+    // qq.set(qq.x, qq.y, qq.z, qq.w).normalize();
+    // this.cameraObject.quaternion.copy(cq);
+
+    let v0 = new Vector3(-dtc.x, -dtc.y, dtc.z);
+    let v1 = new Vector3(0, 0, Math.sign(v0.z));
+    let q = new Quaternion();
+    q.setFromUnitVectors(v1, v0);
+    q.multiply(q);
+    this.cameraObject.quaternion.premultiply(q);
 };
 
 CameraWrapper.prototype.setRotationXZ = function(x, z) {
     this.rx = x;
-    // if (this.rx > 3 * Math.PI / 2) this.rx -= 2 * Math.PI;
-    // if (this.rx < -3 * Math.PI / 2) this.rx += 2 * Math.PI;
-    this.rx = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.rx));
+    if (this.rx > 3 * Math.PI / 2) this.rx -= 2 * Math.PI;
+    if (this.rx < -3 * Math.PI / 2) this.rx += 2 * Math.PI;
+    // this.rx = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.rx));
     this.ry = z;
     this.updateQuaternionFromRotation();
 };

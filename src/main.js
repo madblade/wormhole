@@ -88,8 +88,10 @@ function init() {
     // camera
     cameraWrapper = new CameraWrapper(VIEW_ANGLE, ASPECT, NEAR, FAR);
     camera = cameraWrapper.getRecorder();
-    cameraWrapper.setCameraPosition(0, 75, 160);
-    // cameraWrapper.setRotationXZ(0, Math.PI / 4);
+    cameraWrapper.setCameraPosition(0, 40, 100);
+    cameraWrapper.setRotationXZ(0,  0);
+    // cameraWrapper.setCameraPosition(100, -100 + 40, 0);
+    // cameraWrapper.setRotationXZ(Math.PI / 4,  Math.PI / 2);
     scene1.add(cameraWrapper.get3DObject());
 
     // Wormhole
@@ -198,19 +200,33 @@ function teleport(newPosition)
     //    // cameraWrapper.applyWrapperQuaternion(q);
     // cameraWrapper.setRotationXZ(-cameraWrapper.rx, -cameraWrapper.ry);
 
+    // To center
     let dtc = new Vector3();
     dtc.copy(newPosition).negate().add(entry).normalize();
-    let phi = Math.PI / 2 - Math.acos(dtc.y);
-    let the = Math.atan2(dtc.x, dtc.z) - Math.PI;
+    // let phi = Math.PI / 2 - Math.acos(dtc.y);
+    // let the = Math.atan2(dtc.x, dtc.z) - Math.PI;
     // This is an approximation to reduce gimbal lock precision problems.
     // Use quaternions instead for realistic flight.
-    if (phi < -Math.PI / 4) the = cameraWrapper.ry;
-    if (phi > Math.PI / 4) the = cameraWrapper.ry;
+    // if (the < -Math.PI) the += 2 * Math.PI;
+    // if (the > Math.PI) the -= 2 * Math.PI;
+    // if (phi < -Math.PI / 4) the = cameraWrapper.ry;
+    // if (phi > Math.PI / 4) the = cameraWrapper.ry;
+
+    // let fw = cameraWrapper.getForwardVector([1, 0, 0, 0, 0, 0]).normalize();
     // Simply flip camera x and y
-    cameraWrapper.setRotationXZ(
-        -phi + (cameraWrapper.rx - phi),
-        -the + (cameraWrapper.ry - the)
-    );
+    // let q1 = new Quaternion();
+    // let q2 = new Quaternion();
+    // q1.setFromUnitVectors(fw, dtc);
+    // q2.setFromUnitVectors(dtc, fw);
+    cameraWrapper.flipQuaternion(dtc);
+    // let phi1 = Math.PI / 2 - Math.acos(fw.y);
+    // let the1 = Math.atan2(fw.x, fw.z) - Math.PI;
+
+    // console.log(cameraWrapper.rx);
+    // cameraWrapper.setRotationXZ(
+    //     -phi + (cameraWrapper.rx - phi),
+    //     -the + (cameraWrapper.ry - the)
+    // );
 
     // Mirror newPosition from worm center
     // ex + (en - p)
@@ -238,6 +254,7 @@ function updatePlayerPosition()
         state.forwardDown, state.backDown, state.rightDown, state.leftDown,
         state.upDown, state.downDown
     ], false);
+    // fw.x = fw.y;
     // fw.y = 0;
     let oldDistance = p.distanceTo(wormholeCurrentScene);
     let newPosition = new Vector3(p.x + fw.x, p.y + fw.y, p.z + fw.z);
