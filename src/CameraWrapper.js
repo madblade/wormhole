@@ -132,7 +132,6 @@ CameraWrapper.prototype.getForwardVector = function(d)
     let camQ = new Quaternion();
     this.cameraObject.getWorldQuaternion(camQ);
     nv.applyQuaternion(camQ);
-    // nv.multiplyScalar(2.0);
     return nv;
 };
 

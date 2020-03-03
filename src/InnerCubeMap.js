@@ -36,6 +36,7 @@ varying vec2 vUv;
 varying vec3 vNormal;
 varying vec3 vWorldPosition;
 uniform float radius;
+uniform float stretchFactor;
 
 vec3 inverseTransformDirection(in vec3 dir, in mat4 matrix) {
     // dir can be either a direction vector or a normal vector
@@ -63,8 +64,7 @@ void main() {
     // distance to center normalized to radius
     float d = distance(vec3(0.0), v_position.xyz) / radius;
 
-    float pp = 4.0;
-        // TODO this power can be exposed to stretch to 64 when the camera is close
+    float pp = stretchFactor;
     float b = pow(d, pp);
     float c = 0.5 - tan(b * 1.54); // b * pi / 2
     vec3 proj = vec3(d * dtc, c);
@@ -78,13 +78,14 @@ void main() {
 
 let InnerCubeMap = function(
     windowWidth, windowHeight,
-    innerRadius, entry, exit)
+    innerRadius, entry, exit, stretchFactor)
 {
     this.innerRadius = innerRadius;
 
-    // TODO expose settings
     this.resolution = 2048;
     this.anisotropy = 4;
+    this.stretchFactor = typeof stretchFactor === 'number' ? stretchFactor : 4;
+    this.stretchFactor = Math.min(Math.max(this.stretchFactor, 4), 8);
 
     this.cubeCam = new CubeCamera(0.01, 1024, this.resolution);
     this.cubeCam.renderTarget.texture.anisotropy = this.anisotropy;
@@ -93,17 +94,18 @@ let InnerCubeMap = function(
 
     this.geometry = new CircleGeometry(this.innerRadius, 64);
 
-    // TODO expose and adapt stretch factor
     this.material = new ShaderMaterial({
         side: FrontSide,
         uniforms: {
             radius: { type: 'f', value: this.innerRadius },
-            env: { type: 't', value: this.cubeCam.renderTarget.texture }
+            stretchFactor: { type: 'f', value: this.stretchFactor },
+            env: { type: 't', value: this.cubeCam.renderTarget.texture },
         },
         vertexShader: InnerCubeMapVS,
         fragmentShader: InnerCubeMapFS,
-        // wireframe: true,
         depthTest: false,
+        // On top of setting object.renderOrder you have to set
+        // material.depthTest to false on the relevant objects.
         // renderOrder: 9999
     });
     this.material.needsUpdate = true;

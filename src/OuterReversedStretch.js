@@ -29,13 +29,13 @@ varying vec3 v_center;
 varying vec2 vUv;
 uniform float innerRadius;
 uniform float outerRadius;
+uniform float stretchFactor;
 
 void main() {
     float initialDistance = distance(v_center, v_position.xyz);
     float d2 = (initialDistance - innerRadius) / (outerRadius - innerRadius);
     float factor = 1.0 - d2;
-    factor = pow(factor, 8.0);
-        // TODO this power factor can be exposed
+    factor = pow(factor, stretchFactor);
 
     float pw = pos_frag.w;
     vec2 pxy = pos_frag.xy + (cent_frag.xy - pos_frag.xy) * factor * 2.0;
@@ -48,10 +48,12 @@ void main() {
 let OuterReversedStretch = function(
     windowWidth, windowHeight,
     innerRadius, outerRadius,
-    origin, cameraWrapper)
+    origin, cameraWrapper, stretchFactor)
 {
     this.innerRadius = innerRadius;
     this.outerRadius = 2 * outerRadius;
+    this.stretchFactor = typeof stretchFactor === 'number' ? stretchFactor : 8;
+    this.stretchFactor = Math.min(Math.max(this.stretchFactor, 2), 32);
 
     let cam = cameraWrapper.getRecorder();
     this.camera = new PerspectiveCamera(cam.fov, cam.aspect, cam.near, cam.far);
@@ -74,11 +76,14 @@ let OuterReversedStretch = function(
         uniforms: {
             innerRadius: { type: 'f', value: this.innerRadius },
             outerRadius: { type: 'f', value: this.outerRadius },
+            stretchFactor: { type: 'f', value: this.stretchFactor },
             texture1: { type:'t', value: this.renderTarget.texture }
         },
         vertexShader: OuterReversedStretchVS,
         fragmentShader: OuterReversedStretchFS,
         depthTest: false,
+        // On top of setting object.renderOrder you have to set
+        // material.depthTest to false on the relevant objects.
         // renderOrder: 9999
     });
 

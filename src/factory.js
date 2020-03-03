@@ -1,10 +1,11 @@
 import {
+    AmbientLight,
     BoxBufferGeometry,
     BoxGeometry,
     CylinderBufferGeometry,
     IcosahedronBufferGeometry,
     Mesh, MeshBasicMaterial,
-    MeshPhongMaterial,
+    MeshPhongMaterial, PointLight,
     SphereBufferGeometry,
     TetrahedronBufferGeometry
 } from 'three';
@@ -54,7 +55,7 @@ function addWall(scene, type)
     let r = 200; let phiMax = 20; let theMax = 20;
     for (let phi = 2; phi < phiMax - 1; ++phi) {
         for (let the = 0; the < theMax; ++the) {
-            tet = new Mesh(tetGeo, new MeshBasicMaterial(
+            tet = new Mesh(tetGeo, new MeshPhongMaterial(
                 { color: 0xffffff * Math.random() }
             ));
             let phiTrue = pi * phi / phiMax;
@@ -65,6 +66,11 @@ function addWall(scene, type)
             scene.add(tet);
         }
     }
+}
+
+function addLights(scene) {
+    let pointLight = new PointLight(0xffffff, 2);
+    scene.add(pointLight);
 }
 
 function addCubeWall(scene)
@@ -217,4 +223,9 @@ function addListeners(
     });
 }
 
-export { addListeners, getHalfSphere, getSmallSphere, addWall, addCubeWall, newComposer };
+export {
+    addListeners,
+    getHalfSphere, getSmallSphere,
+    addWall, addCubeWall, addLights,
+    newComposer
+};

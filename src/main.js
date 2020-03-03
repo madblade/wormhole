@@ -1,15 +1,13 @@
 
 // scene size
 import {
-    Euler,
     Quaternion,
-    Scene, Vector2, Vector3,
+    Scene, Vector3,
     WebGLRenderer
 } from 'three';
-import { Room } from './Room';
 import {
-    addCubeWall, addListeners, addWall,
-    getSmallSphere, newComposer
+    addLights, addListeners, addWall,
+    newComposer
 } from './factory';
 import { InnerCubeMap } from './InnerCubeMap';
 import { CameraWrapper } from './CameraWrapper';
@@ -48,8 +46,6 @@ let state = {
 let oss;
 let icm;
 
-// let halfSphere;
-let smallSphere;
 let effectComposerS1;
 let effectComposerS2;
 
@@ -60,14 +56,7 @@ let wormholeExit;
 let eventContainer = [];
 let currentWorld = '1';
 
-// TODO 5. curve trajectory between 2r and .75r
-//  idea: I can force smaller steps!!
-// TODO 6. study transition smoothness
-
 // TODO 7. control widget for mobile
-// TODO 8. blackhole scope reducer
-// On top of setting object.renderOrder you have to set
-// material.depthTest to false on the relevant objects.
 
 init();
 animate();
@@ -88,10 +77,8 @@ function init() {
     // camera
     cameraWrapper = new CameraWrapper(VIEW_ANGLE, ASPECT, NEAR, FAR, 'quaternion');
     camera = cameraWrapper.getRecorder();
-    cameraWrapper.setCameraPosition(0, 40, 100);
-    cameraWrapper.setRotationXZ(0,  0);
-    // cameraWrapper.setCameraPosition(100, -100 + 40, 0);
-    // cameraWrapper.setRotationXZ(Math.PI / 4,  Math.PI / 2);
+    cameraWrapper.setCameraPosition(100, 40, 0);
+    cameraWrapper.setRotationXZ(0, Math.PI / 2);
     scene1.add(cameraWrapper.get3DObject());
 
     // Wormhole
@@ -106,7 +93,7 @@ function init() {
     // Outer ring
     oss = new OuterReversedStretch(width, height,
         wormholeRadius, 2 * wormholeRadius,
-        wormholeEntry, cameraWrapper
+        wormholeEntry, cameraWrapper, 8
     );
     scene1.add(oss.getMesh());
 
@@ -114,7 +101,7 @@ function init() {
     icm = new InnerCubeMap(width, height,
         wormholeRadius,
         wormholeEntry,
-        wormholeExit
+        wormholeExit, 4
     );
     scene1.add(icm.getMesh());
     scene2.add(icm.getWrapper()); // Rotate cube cam
@@ -123,20 +110,12 @@ function init() {
     effectComposerS1 = newComposer(renderer, scene1, camera, oss.getRenderTarget());
     effectComposerS2 = newComposer(renderer, scene2, camera, oss.getRenderTarget());
 
-    // Objects
-    // halfSphere = getHalfSphere();
-    // scene.add(halfSphere);
-    smallSphere = getSmallSphere();
-    scene1.add(smallSphere);
-
-    // let room = new Room(0x7f7fff, 0x00ff00, 0xff0000, 0xffffff);
-    // let roomMesh = room.getMesh();
-    // roomMesh.scale.set(2, 2, 2);
-    // scene1.add(roomMesh);
+    // Lights
+    addLights(scene1);
+    addLights(scene2);
 
     // Background
     addWall(scene1, 'tet');
-    // addCubeWall(scene1);
     addWall(scene2, 'box');
 
     // Controls
@@ -217,21 +196,31 @@ function updatePlayerPosition()
     ], false);
     let oldDistance = p.distanceTo(wormholeCurrentScene);
 
+    // let fwNorm = 1.0;
+    // fw.multiplyScalar(fwNorm);
     /// Distort trajectory
-    if (fw.distanceTo(new Vector3(0, 0, 0)) > 0) {
+    if (fw.distanceTo(new Vector3(0, 0, 0)) > 0 &&
+        oldDistance < 4 * wormholeRadius)
+    {
         // Gravity field
-        let g = 10;
+        let g = wormholeRadius / 2;
         let gravity = new Vector3();
         gravity.copy(p).negate();
         gravity.add(wormholeCurrentScene);
-        gravity.multiplyScalar(g / Math.pow(oldDistance, 3));
+        gravity.multiplyScalar(// fwNorm *
+            g / Math.pow(oldDistance, 3));
         // Angle between new and fw
         let newFw = new Vector3();
         newFw.copy(fw).add(gravity);
         let newDirection = new Vector3();
         newDirection.copy(newFw).normalize();
         let angle = new Quaternion();
-        angle.setFromUnitVectors(fw, newFw);
+        // let fwNormalized = new Vector3();
+        // fwNormalized.copy(fw).normalize();
+        angle.setFromUnitVectors(
+            // fwNormalized,
+            fw,
+            newFw);
         cameraWrapper.get3DObject().quaternion.premultiply(angle);
         fw.copy(newFw);
     }
@@ -240,9 +229,7 @@ function updatePlayerPosition()
     let newDistance = newPosition.distanceTo(wormholeCurrentScene);
 
     // Intersect with wormhole horizon
-    // TODO must curve toward the center
     if (oldDistance >= wormholeRadius * 0.5 && newDistance < wormholeRadius * 0.5) {
-        // console.log(`${oldDistance} -> ${newDistance} [${wormholeRadius}]`);
         teleport(newPosition);
         // Switch wormhole positions
         let temp = wormholeCurrentScene;
@@ -298,7 +285,7 @@ function render()
 
     // Render outer ring with FXAA
     effectComposer.render();
-    effectComposer.render(); // This fixes the 1f latency bug
+    effectComposer.render(); // This fixes the render sync bug
     // Render inner circle with cube map
     icm.getCubeCam().update(renderer, otherScene);
 
@@ -312,16 +299,6 @@ function render()
 
 function animate() {
     requestAnimationFrame(animate);
-
-    // Update objects
-    let timer = Date.now() * 0.01;
-    smallSphere.position.set(
-        Math.cos(timer * 0.1) * 30,
-        Math.abs(Math.cos(timer * 0.2)) * 20 + 5,
-        Math.sin(timer * 0.1) * 30
-    );
-    smallSphere.rotation.y =  Math.PI / 2  - timer * 0.1;
-    smallSphere.rotation.z = timer * 0.8;
 
     // Update controls
     for (let i = 0; i < eventContainer.length; ++i) {
