@@ -314,10 +314,10 @@ function animate() {
     requestAnimationFrame(animate);
 
     // Update controls
-    if (state.touchLeft) eventContainer.push([0.002, 0]);
-    if (state.touchRight) eventContainer.push([-0.002, 0]);
-    if (state.touchUp) eventContainer.push([0, 0.002]);
-    if (state.touchDown) eventContainer.push([0, -0.002]);
+    if (state.touchLeft) eventContainer.push([0.006, 0]);
+    if (state.touchRight) eventContainer.push([-0.006, 0]);
+    if (state.touchUp) eventContainer.push([0, 0.006]);
+    if (state.touchDown) eventContainer.push([0, -0.006]);
 
     for (let i = 0; i < eventContainer.length; ++i) {
         let e = eventContainer[i];

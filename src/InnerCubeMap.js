@@ -52,12 +52,6 @@ void main() {
     float refractionRatio = 1.0;
     vec3 reflectVec = reflect(cameraToFrag, worldNormal);
 
-    float initialDistance = distance(vec3(0.0), v_position.xyz);
-    float d2 = 1.0; /* (initialDistance - 20.0) / 20.0; */
-    vec2 pxy = pos_frag.xy;
-    float pw = pos_frag.w;
-    vec2 correctedUv = (vec2(d2 * pxy / pw) + vec2(1.0)) * 0.5;
-
     // difference to center
     vec2 dtc = normalize(vUv - vec2(0.5));
 
