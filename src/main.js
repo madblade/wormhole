@@ -122,7 +122,7 @@ function init() {
     addListeners(
         cameraWrapper, icm,
         state,
-        eventContainer
+        eventContainer, renderer
     );
 }
 

@@ -107,9 +107,9 @@ function newComposer(rendrr, sc, cam, target)
 }
 
 function addListeners(
-    camera, icm,
+    cameraWrapper, icm,
     state,
-    eventContainer
+    eventContainer, renderer
 ) {
     const azerty = {
         FORWARD: 90, // z
@@ -221,6 +221,13 @@ function addListeners(
     document.addEventListener('mouseup', () => {
         state.mouseDown = false;
     });
+
+    window.addEventListener('resize', () => {
+        let camera = cameraWrapper.getRecorder();
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    }, false);
 }
 
 export {
