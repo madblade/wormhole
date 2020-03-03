@@ -200,6 +200,11 @@ function addListeners(
         state.backDown = false;
         state.downDown = false;
         state.upDown = false;
+
+        state.touchLeft = false;
+        state.touchRight = false;
+        state.touchUp = false;
+        state.touchDown = false;
     };
 
     document.addEventListener('focusout', resetState);
@@ -228,6 +233,55 @@ function addListeners(
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
     }, false);
+
+    let touchListener = e => {
+        resetState();
+        let touches = e.touches;
+        for (let i = 0; i < touches.length; ++i) {
+            let touch = touches[i];
+            let x = touch.clientX;
+            let y = touch.clientY;
+            let el = document.elementFromPoint(x, y);
+            if (!el) continue;
+            switch (el.id) {
+                case 'll':
+                    state.touchLeft = true;
+                    eventContainer.push([0.002, 0]);
+                    break;
+                case 'lr':
+                    state.touchRight = true;
+                    eventContainer.push([-0.002, 0]);
+                    break;
+                case 'lu':
+                    state.touchUp = true;
+                    eventContainer.push([0, 0.002]);
+                    break;
+                case 'ld':
+                    state.touchDown = true;
+                    eventContainer.push([0, -0.002]);
+                    break;
+
+                case 'rl':
+                    state.leftDown = true;
+                    break;
+                case 'rr':
+                    state.rightDown = true;
+                    break;
+                case 'ru':
+                    state.forwardDown = true;
+                    break;
+                case 'rd':
+                    state.backDown = true;
+                    break;
+
+                default: break;
+            }
+        }
+    };
+
+    window.addEventListener('touchstart', touchListener);
+    window.addEventListener('touchmove', touchListener);
+    window.addEventListener('touchend', touchListener);
 }
 
 export {

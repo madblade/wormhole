@@ -1,4 +1,6 @@
 
+import 'bootstrap/dist/css/bootstrap.min.css';
+
 // scene size
 import {
     Quaternion,
@@ -11,7 +13,7 @@ import {
 } from './factory';
 import { InnerCubeMap } from './InnerCubeMap';
 import { CameraWrapper } from './CameraWrapper';
-import {OuterReversedStretch} from './OuterReversedStretch';
+import { OuterReversedStretch } from './OuterReversedStretch';
 
 // Depth buffer interesting articles
 // https://threejs.org/examples/webgl_depth_texture.html
@@ -41,7 +43,12 @@ let state = {
     rightDown: false,
     backDown: false,
     downDown: false,
-    upDown: false
+    upDown: false,
+
+    touchLeft: false,
+    touchRight: false,
+    touchUp: false,
+    touchDown: false
 };
 let oss;
 let icm;
@@ -56,12 +63,18 @@ let wormholeExit;
 let eventContainer = [];
 let currentWorld = '1';
 
-// TODO 7. control widget for mobile
-
 init();
 animate();
 
 function init() {
+    const isTouch = ('ontouchstart' in window) || (navigator.msMaxTouchPoints > 0);
+    if (isTouch) {
+        document.getElementById('info').style.display = 'none';
+    } else {
+        document.getElementById('widget-right').style.display = 'none';
+        document.getElementById('widget-left').style.display = 'none';
+    }
+
     let container = document.getElementById('container');
 
     // renderer
@@ -301,6 +314,11 @@ function animate() {
     requestAnimationFrame(animate);
 
     // Update controls
+    if (state.touchLeft) eventContainer.push([0.002, 0]);
+    if (state.touchRight) eventContainer.push([-0.002, 0]);
+    if (state.touchUp) eventContainer.push([0, 0.002]);
+    if (state.touchDown) eventContainer.push([0, -0.002]);
+
     for (let i = 0; i < eventContainer.length; ++i) {
         let e = eventContainer[i];
         if (e[0]) cameraWrapper.rotateZ(e[0]);
