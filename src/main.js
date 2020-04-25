@@ -66,15 +66,14 @@ let currentWorld = '1';
 init();
 animate();
 
-function init() {
+function init()
+{
     const isTouch = ('ontouchstart' in window) || (navigator.msMaxTouchPoints > 0);
     if (isTouch) {
         document.getElementById('info').style.display = 'none';
     } else {
-        document.getElementById('widget-right').style.display = 'none';
-        document.getElementById('widget-left').style.display = 'none';
+        document.getElementById('widget').style.display = 'none';
     }
-
     let container = document.getElementById('container');
 
     // renderer
@@ -88,7 +87,7 @@ function init() {
     scene2 = new Scene();
 
     // camera
-    cameraWrapper = new CameraWrapper(VIEW_ANGLE, ASPECT, NEAR, FAR, 'quaternion');
+    cameraWrapper = new CameraWrapper(VIEW_ANGLE, ASPECT, NEAR, FAR, 'quaternion', isTouch);
     camera = cameraWrapper.getRecorder();
     cameraWrapper.setCameraPosition(100, 40, 0);
     cameraWrapper.setRotationXZ(0, Math.PI / 2);
@@ -314,10 +313,12 @@ function animate() {
     requestAnimationFrame(animate);
 
     // Update controls
-    if (state.touchLeft) eventContainer.push([0.006, 0]);
-    if (state.touchRight) eventContainer.push([-0.006, 0]);
-    if (state.touchUp) eventContainer.push([0, 0.006]);
-    if (state.touchDown) eventContainer.push([0, -0.006]);
+    // if (state.touchLeft) eventContainer.push([0.006, 0]);
+    // if (state.touchRight) eventContainer.push([-0.006, 0]);
+    // if (state.touchUp) eventContainer.push([0, 0.006]);
+    // if (state.touchDown) eventContainer.push([0, -0.006]);
+
+    cameraWrapper.animateTouch();
 
     for (let i = 0; i < eventContainer.length; ++i) {
         let e = eventContainer[i];

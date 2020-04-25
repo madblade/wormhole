@@ -227,12 +227,14 @@ function addListeners(
         state.mouseDown = false;
     });
 
-    window.addEventListener('resize', () => {
+    let resizeCallback = () => {
         let camera = cameraWrapper.getRecorder();
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
-    }, false);
+    };
+    window.addEventListener('resize', resizeCallback, false);
+    window.addEventListener('orientationchange', resizeCallback, false);
 
     let touchListener = e => {
         resetState();

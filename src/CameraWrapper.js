@@ -1,9 +1,10 @@
 import {
     Object3D, PerspectiveCamera, Quaternion, Vector3
 } from 'three';
+import {MobileWidgetCameraControls} from './MobileWidgetCameraControls';
 
 let CameraWrapper = function(
-    fov, aspect, nearPlane, farPlane, controlType)
+    fov, aspect, nearPlane, farPlane, controlType, isTouch)
 {
     let camera = new PerspectiveCamera(fov, aspect, nearPlane, farPlane);
     let up = new Object3D();
@@ -23,6 +24,17 @@ let CameraWrapper = function(
     this.rx = 0;
     this.ry = 0;
     // this.rz = 0;
+
+    this.isTouch = isTouch;
+    if (isTouch) {
+        let widget = document.getElementById('widget');
+        this.touchControls = new MobileWidgetCameraControls(widget, this, 'spherical', 'default');
+    }
+};
+
+CameraWrapper.prototype.animateTouch = function() {
+    if (this.touchControls)
+        this.touchControls.animate();
 };
 
 CameraWrapper.prototype.getRecorder = function() {
@@ -118,6 +130,10 @@ CameraWrapper.prototype.setCameraPosition = function(x, y, z) {
 
 CameraWrapper.prototype.getForwardVector = function(d)
 {
+    if (this.isTouch) {
+        return this.getForwardVectorMobile();
+    }
+
     let fw = d[0]; let bw = d[1];
     let rg = d[2]; let lf = d[3];
     let up = d[4]; let dn = d[5];
@@ -133,6 +149,12 @@ CameraWrapper.prototype.getForwardVector = function(d)
     this.cameraObject.getWorldQuaternion(camQ);
     nv.applyQuaternion(camQ);
     return nv;
+};
+
+CameraWrapper.prototype.getForwardVectorMobile = function()
+{
+    if (this.touchControls)
+        return this.touchControls.getForwardVectorFromStick();
 };
 
 export { CameraWrapper };

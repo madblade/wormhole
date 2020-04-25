@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Wormhole test</title>
+    <base href="<%= htmlWebpackPlugin.options.baseUrl %>" />
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <style>
+        body {
+            color: #ffffff;
+            font-family: Monospace, sans-serif;
+            font-size:13px;
+            background-color: #000;
+            margin: 0;
+            overflow: hidden;
+        }
+        #info {
+            position: absolute;
+            bottom: 0;
+            color: white;
+        }
+        a {
+            color: #00f;
+        }
+        canvas {
+            position : absolute; top : 0; left : 0;
+        }
+    </style>
+</head>
+<body>
+
+<div id="container"></div>
+<div id="widget"></div>
+<div id="info" class="col-6">
+    <div class="row col-6">
+        <p>Controls: Mouse + <br />WASD / ZQSD / Arrows / »épo</p>
+    </div>
+</div>
+
+</body>
+</html>
