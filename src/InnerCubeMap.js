@@ -2,8 +2,8 @@ import {
     CircleGeometry, CubeCamera,
     FrontSide,
     LinearMipMapLinearFilter, Mesh,
-    Object3D,
-    ShaderMaterial
+    Object3D, RGBFormat,
+    ShaderMaterial, WebGLCubeRenderTarget
 } from 'three';
 
 const InnerCubeMapVS = `
@@ -81,10 +81,14 @@ let InnerCubeMap = function(
     this.stretchFactor = typeof stretchFactor === 'number' ? stretchFactor : 4;
     this.stretchFactor = Math.min(Math.max(this.stretchFactor, 4), 8);
 
-    this.cubeCam = new CubeCamera(0.01, 1024, this.resolution);
-    this.cubeCam.renderTarget.texture.anisotropy = this.anisotropy;
-    this.cubeCam.renderTarget.texture.minFilter = LinearMipMapLinearFilter;
-    this.cubeCam.renderTarget.texture.generateMipmaps = true;
+    this.cubeCamRenderTarget = new WebGLCubeRenderTarget(this.resolution, {
+        format: RGBFormat,
+        generateMipmaps: true,
+        anisotropy: true,
+        minFilter: LinearMipMapLinearFilter
+    });
+
+    this.cubeCam = new CubeCamera(0.01, 1024, this.cubeCamRenderTarget);
 
     this.geometry = new CircleGeometry(this.innerRadius, 64);
 
