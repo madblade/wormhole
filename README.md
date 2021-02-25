@@ -1,5 +1,5 @@
 
-[Demo available here!](https://madblade.github.io/worhole/)
+[Demo available here!](https://madblade.github.io/wormhole/)
 
 ![](https://www.msoler.fr/assets/img/craft/wormhole.jpg)
 
